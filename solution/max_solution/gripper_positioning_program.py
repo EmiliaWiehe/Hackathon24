@@ -19,6 +19,18 @@ def main():
     # Load a test image
     test_image_path = r'C:\Users\singe\Desktop\test_img_3.png'  # Replace with an actual path
 
+    input_array = np.array([
+        [0, 1, 0],
+        [0, 0, 0],
+        [1, 0, 1]
+    ])
+    padding_amount = 2
+    result = add_padding(input_array, padding_amount)
+    print("Original Array:")
+    print(input_array)
+    print("\nPadded Array:")
+    print(result)
+
     if os.path.exists(test_image_path):
         
         image_array = tf.keras.preprocessing.image.load_img(test_image_path)
@@ -31,7 +43,7 @@ def main():
 
         # Open the PNG image
         gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\ProKI Hackathon 2024\Rohdaten\part_1\1.png').convert("RGBA")
-        processed_gripper = ProcessedGripper(gripper)
+        processed_gripper = ProcessedGripper(gripper, 2)
 
         gripper_placement = GripperPlacement(processed_part, processed_gripper)
         collosion_threshold = 1 + processed_part.get_collision_threshold()
@@ -50,13 +62,18 @@ def main():
             print(f"Distance from optimal gripper position to part center of mass: {np.sqrt((com_x - g_com_x)**2 + (com_y - g_com_y)**2)}")
         
         #gripper_placement.check_gripper_position(gripper_position[0], gripper_position[1], gripper_position[2], collosion_threshold)
+        
+        gripper_resized_array = processed_gripper.get_resized_gripper_array(image_array.width, image_array.height,
+                                                               gripper_position[0], gripper_position[1],
+                                                               gripper_position[2], processed_gripper.get_gripper_array_unpadded())
+        
         # Record the end time
         end_time = time.time()
         # Print the execution time
         print(f"Execution time: {end_time - start_time} seconds")
-
         plt.subplot(1, 3, 1)
-        plt.imshow(gripper_placement.get_combined_array(), cmap='gray')  # Combined array
+        plt.imshow(gripper_placement.get_combined_array() + 
+                   gripper_resized_array, cmap='gray')  # Combined array
         plt.title("Gripper")
         
         #print(com)
@@ -64,6 +81,7 @@ def main():
         # Visualize results
         plt.subplot(1, 3, 2)
         plt.imshow(image_array)  # Original image
+        plt.imshow(gripper_resized_array, cmap='gray', alpha=0.5)  # Gripper
         plt.title("Original Image")
 
         plt.subplot(1, 3, 3)
@@ -74,7 +92,66 @@ def main():
     else:
         print(f"Error: Test image not found at {test_image_path}")
 
+def add_padding(input_array, padding_amount):
+    """
+    Adds padding around entries with a 1 in a 2D numpy array.
 
+    Parameters:
+    input_array (np.array): A 2D numpy array containing only 0s and 1s.
+    padding_amount (int): The amount of padding to add around entries with a 1.
+
+    Returns:
+    np.array: A new 2D numpy array with the specified padding added.
+    """
+    if not isinstance(input_array, np.ndarray):
+        raise ValueError("Input must be a numpy array.")
+    if not np.array_equal(input_array, input_array.astype(bool)):
+        raise ValueError("Input array must contain only 0s and 1s.")
+    if not isinstance(padding_amount, int) or padding_amount < 0:
+        raise ValueError("Padding amount must be a non-negative integer.")
+
+    # Calculate the new size of the array with padding
+    rows, cols = input_array.shape
+    new_rows, new_cols = rows + 2 * padding_amount, cols + 2 * padding_amount
+
+    # Create a new array initialized with zeros
+    padded_array = np.zeros((new_rows, new_cols), dtype=int)
+
+    # Place the original array in the center of the new array
+    padded_array[padding_amount:padding_amount + rows, padding_amount:padding_amount + cols] = input_array
+
+    # Find indices where the original array has 1s
+    ones_indices = np.argwhere(padded_array == 1)
+
+    # Add padding around each 1
+    for r, c in ones_indices:
+        padded_array[max(0, r - padding_amount):r + padding_amount + 1,
+                     max(0, c - padding_amount):c + padding_amount + 1] = 1
+
+    return padded_array
+
+def array_to_tf_image(array):
+    """
+    Converts a 2D numpy array with values between 0 and 1 to a TensorFlow RGB image.
+
+    Parameters:
+    array (np.array): A 2D numpy array with values between 0 and 1.
+
+    Returns:
+    tf.Tensor: A TensorFlow tensor representing an RGB image.
+    """
+    if not isinstance(array, np.ndarray):
+        raise ValueError("Input must be a numpy array.")
+    if array.min() < 0 or array.max() > 1:
+        raise ValueError("Array values must be between 0 and 1.")
+
+    # Convert 2D array to 3D by stacking it into 3 channels (RGB)
+    rgb_array = np.stack([array, array, array], axis=-1)
+
+    # Convert to TensorFlow tensor with dtype=tf.float32
+    tf_image = tf.convert_to_tensor(rgb_array, dtype=tf.float32)
+
+    return tf_image
 
 # Entry point
 if __name__ == "__main__":

@@ -127,7 +127,7 @@ class ProcessedPart:
         
         return result_array
     
-    def calc_collision_threshold(self, part_mask):
+    def calc_collision_threshold(self, part_mask, additional_threshold=0.2):
         """Calculates the collision threshold for the gripper to avoid collisions with the part.
         Values of exactly 1 will not count towards the threshold to compensate for missing pixels.
 
@@ -153,6 +153,6 @@ class ProcessedPart:
     
         
         # Calculate the collision threshold
-        collision_threshold = num_holes / adjusted_num_pixels
+        collision_threshold = num_holes / adjusted_num_pixels + additional_threshold
         
         return collision_threshold

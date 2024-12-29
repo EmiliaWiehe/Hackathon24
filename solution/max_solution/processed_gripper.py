@@ -6,13 +6,14 @@ class ProcessedGripper:
     """Processes a gripper.png to be able to retrive a np.array of the gripper as well as the center of mass.
     """
 
-    def __init__(self, gripper):
+    def __init__(self, gripper, padding_amount=4):
         """Generate np.array of gripper and calculate center of mass.
 
         Args:
             gripper (PIL.Image): Image of the gripper.
         """
-        self.gripper_array = self.gripper_conversion(gripper)
+        self.gripper_array_unpadded = self.gripper_conversion(gripper)
+        self.gripper_array = self.add_padding(self.gripper_array_unpadded, padding_amount)
         self.gripper_com = self.calc_gripper_com(self.gripper_array)
 
     def calc_gripper_com(self, gripper_array):
@@ -56,7 +57,15 @@ class ProcessedGripper:
         """
         return self.gripper_array
     
-    def get_resized_gripper_array(self, image_width, image_height, index_x, index_y, angle):
+    def get_gripper_array_unpadded(self):
+        """Getter for unpadded gripper array.
+
+        Returns:
+            np.ndarray: 2D binary np.array with 1 representing the gripper geometry.
+        """
+        return self.gripper_array_unpadded
+    
+    def get_resized_gripper_array(self, image_width, image_height, index_x, index_y, angle, gripper_array=None):
         """Getter for resized gripper array. Resizes the gripper array to the given image dimensions,
         places the center of mass at the given index and rotates the gripper by the given angle.
 
@@ -70,7 +79,8 @@ class ProcessedGripper:
         Returns:
             np.ndarray: 2D binary np.array with 1 representing the gripper geometry.
         """
-        gripper_array = self.gripper_array
+        if gripper_array is None:
+            gripper_array = self.gripper_array
         gripper_array = self.resize_for_rotation(gripper_array)
         gripper_array = self.rotate_image(gripper_array, angle)
         gripper_array = self.resize_to_contain_ones(gripper_array)
@@ -202,3 +212,41 @@ class ProcessedGripper:
 
         resized_gripper[start_y:end_y, start_x:end_x] = gripper_array
         return resized_gripper
+    
+    def add_padding(self, input_array, padding_amount):
+        """
+        Adds padding around entries with a 1 in a 2D numpy array.
+
+        Parameters:
+        input_array (np.array): A 2D numpy array containing only 0s and 1s.
+        padding_amount (int): The amount of padding to add around entries with a 1.
+
+        Returns:
+        np.array: A new 2D numpy array with the specified padding added.
+        """
+        if not isinstance(input_array, np.ndarray):
+            raise ValueError("Input must be a numpy array.")
+        if not np.array_equal(input_array, input_array.astype(bool)):
+            raise ValueError("Input array must contain only 0s and 1s.")
+        if not isinstance(padding_amount, int) or padding_amount < 0:
+            raise ValueError("Padding amount must be a non-negative integer.")
+
+        # Calculate the new size of the array with padding
+        rows, cols = input_array.shape
+        new_rows, new_cols = rows + 2 * padding_amount, cols + 2 * padding_amount
+
+        # Create a new array initialized with zeros
+        padded_array = np.zeros((new_rows, new_cols), dtype=int)
+
+        # Place the original array in the center of the new array
+        padded_array[padding_amount:padding_amount + rows, padding_amount:padding_amount + cols] = input_array
+
+        # Find indices where the original array has 1s
+        ones_indices = np.argwhere(padded_array == 1)
+
+        # Add padding around each 1
+        for r, c in ones_indices:
+            padded_array[max(0, r - padding_amount):r + padding_amount + 1,
+                        max(0, c - padding_amount):c + padding_amount + 1] = 1
+
+        return padded_array
