@@ -12,7 +12,7 @@ class ProcessedPart:
             part (tf.keras.image): Part to process.
         """
         self.part_mask = self.ml_hole_localization(part)
-        self.part_com = ndimage.measurements.center_of_mass(self.part_mask)
+        self.part_com = self.calc_part_com()
 
     def get_part_mask(self):
         """Getter for the part mask.
@@ -29,6 +29,20 @@ class ProcessedPart:
             tupel(np.float, np.float): (x,y) - index for the part mask representing the center of mass.
         """
         return self.part_com
+    
+    def calc_part_com(self):
+        """Calculate the center of mass of the part as a tuple of integers.
+
+        Returns:
+            tupel(int, int): Index for the part array representing the center of mass.
+            First index is the x index, second index is the y index.
+        """
+        part_com_float = ndimage.measurements.center_of_mass(self.part_mask)
+        part_com = tuple(int(round(x)) for x in part_com_float)
+
+        # Reorder the tuple so that first index ist x index and second index is y index.
+        part_com_reordered = (part_com[1], part_com[0])
+        return part_com_reordered
 
     def ml_hole_localization(self, part):
         """Uses binary semantic segmentation to classify each pixel of "part" as a hole (1) or non-hole (0).
