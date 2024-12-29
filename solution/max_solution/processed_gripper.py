@@ -27,7 +27,6 @@ class ProcessedGripper:
         """
         gripper = self.invert_image(gripper_array)  # Gripper should be 0, non-gripper should be 1 for com calc.
         gripper_com_float = ndimage.measurements.center_of_mass(gripper)
-        print(gripper_com_float)
         gripper_com = tuple(int(round(x)) for x in gripper_com_float)
 
         # Reorder the tuple so that first index ist x index and second index is y index.
@@ -189,7 +188,6 @@ class ProcessedGripper:
         com_x, com_y = self.calc_gripper_com(gripper_array)
         start_x = index_x - int(com_x)
         start_y = index_y - int(com_y)
-        print(gripper_array.shape)
         end_x = start_x + gripper_array.shape[1]
         end_y = start_y + gripper_array.shape[0]
 

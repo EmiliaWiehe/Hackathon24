@@ -10,6 +10,8 @@ import numpy as np
 import numpy as np
 from PIL import Image
 import cv2  # Optional for better resizing quality
+import time
+from collections import deque
 
 
 # Main function
@@ -30,7 +32,7 @@ def main():
         print(com_x, com_y)
 
         # Open the PNG image
-        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\ProKI Hackathon 2024\Rohdaten\part_1\4.png').convert("RGBA")
+        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\ProKI Hackathon 2024\Rohdaten\part_1\1.png').convert("RGBA")
         processed_gripper = ProcessedGripper(gripper)
 
         angle = -45
@@ -39,7 +41,22 @@ def main():
         print(gripper_com)
 
         gripper_placement = GripperPlacement(processed_part, processed_gripper)
-        print(gripper_placement.check_gripper_position(com_x, com_y, angle, 1.60))
+        collosion_threshold = 1 + processed_part.get_collision_threshold()
+        print(f"Collision threshold: {collosion_threshold}")
+        # Record the start time
+        start_time = time.time()
+        gripper_position = gripper_placement.determine_gripper_position(collosion_threshold)
+        
+        if gripper_position is None:
+            print("No valid gripper position found.")
+            return
+        else:
+            print(f"Optimal gripper position: {gripper_position}")
+        print(gripper_placement.check_gripper_position(gripper_position[0], gripper_position[1], gripper_position[2], collosion_threshold))
+        # Record the end time
+        end_time = time.time()
+        # Print the execution time
+        print(f"Execution time: {end_time - start_time} seconds")
 
         plt.subplot(1, 3, 1)
         plt.imshow(gripper_placement.get_combined_array(), cmap='gray')  # Combined array
@@ -59,6 +76,7 @@ def main():
         plt.show()
     else:
         print(f"Error: Test image not found at {test_image_path}")
+
 
 
 # Entry point

@@ -14,6 +14,7 @@ class ProcessedPart:
         """
         self.part_mask = self.ml_hole_localization(part)
         self.part_com = self.calc_part_com()
+        self.collision_threshold = self.calc_collision_threshold(self.part_mask)
 
     def get_part_mask(self):
         """Getter for the part mask.
@@ -30,6 +31,14 @@ class ProcessedPart:
             tupel(np.float, np.float): (x,y) - index for the part mask representing the center of mass.
         """
         return self.part_com
+    
+    def get_collision_threshold(self):
+        """Getter for the collision threshold.
+
+        Returns:
+            float: The collision threshold for the gripper.
+        """
+        return self.collision_threshold
     
     def calc_part_com(self):
         """Calculate the center of mass of the part as a tuple of integers.
@@ -76,7 +85,6 @@ class ProcessedPart:
 
         normalized_part = preprocessing.image.img_to_array(part) / 255.0 #Normalize array values between 0 and 1
         part_outline = self.missing_pixels_to_array_tf(part) #Get a mask of missing pixels (NaN values)
-        print(part_outline)
 
         # Save Original img dimensions
         original_height, original_width = normalized_part.shape[:2]
@@ -118,3 +126,23 @@ class ProcessedPart:
         result_array = missing_mask.numpy()
         
         return result_array
+    
+    def calc_collision_threshold(self, part_mask):
+        """Calculates the collision threshold for the gripper to avoid collisions with the part.
+
+        Args:
+            part_mask (np.array): 2D np.array with values between 0 and 1. Closer to 1 = likely a hole.
+
+        Returns:
+            float: The collision threshold for the gripper. A value between 0 and 1.
+        """
+        # Calculate the number of pixels in the part mask
+        num_pixels = part_mask.size
+        
+        # Calculate the number of hole pixels
+        num_holes = np.sum(part_mask)
+        
+        # Calculate the collision threshold
+        collision_threshold = num_holes / num_pixels
+        
+        return collision_threshold
