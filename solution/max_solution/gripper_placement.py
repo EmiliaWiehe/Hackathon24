@@ -155,7 +155,7 @@ class GripperPlacement:
         """
         rows, cols = arr.shape
         x0, y0 = start_index
-        step_size = 2
+        step_size = 4
         
         # Directions for neighbors
         d_up = (-step_size, 0)

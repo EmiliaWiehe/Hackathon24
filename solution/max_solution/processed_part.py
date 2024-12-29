@@ -129,20 +129,30 @@ class ProcessedPart:
     
     def calc_collision_threshold(self, part_mask):
         """Calculates the collision threshold for the gripper to avoid collisions with the part.
+        Values of exactly 1 will not count towards the threshold to compensate for missing pixels.
 
         Args:
             part_mask (np.array): 2D np.array with values between 0 and 1. Closer to 1 = likely a hole.
 
         Returns:
-            float: The collision threshold for the gripper. A value between 0 and 1.
+            float: The collision threshold for the gripper. A value between 0 and 1. If there is
+            a higher probability for holes across the entire part, the threashold will also be higher.
         """
         # Calculate the number of pixels in the part mask
         num_pixels = part_mask.size
+
+        # Replace all values of exactly 1 with 0 to compensate for missing pixels
+        part_mask = np.where(part_mask == 1, 0, part_mask)
         
         # Calculate the number of hole pixels
         num_holes = np.sum(part_mask)
+
+        # Subtract the number of values with exactly 0 from num_pixels
+        num_zeros = np.sum(part_mask == 0)
+        adjusted_num_pixels = num_pixels - num_zeros
+    
         
         # Calculate the collision threshold
-        collision_threshold = num_holes / num_pixels
+        collision_threshold = num_holes / adjusted_num_pixels
         
         return collision_threshold
