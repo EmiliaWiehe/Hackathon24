@@ -25,13 +25,29 @@ class ProcessedGripper:
             tupel(int, int): Index for the gripper array representing the center of mass.
             First index is the x index, second index is the y index.
         """
-        gripper_com_float = ndimage.measurements.center_of_mass(gripper_array)
+        gripper = self.invert_image(gripper_array)  # Gripper should be 0, non-gripper should be 1 for com calc.
+        gripper_com_float = ndimage.measurements.center_of_mass(gripper)
         print(gripper_com_float)
         gripper_com = tuple(int(round(x)) for x in gripper_com_float)
 
         # Reorder the tuple so that first index ist x index and second index is y index.
         gripper_com_reordered = (gripper_com[1], gripper_com[0])
         return gripper_com_reordered
+    
+    def invert_image(self, array):
+        """
+        Inverts a 2D NumPy array with values between 0 and 1.
+
+        Args:
+            array (np.ndarray): Input 2D array with values between 0 and 1.
+
+        Returns:
+            np.ndarray: Inverted 2D array where each value `x` is replaced by `1 - x`.
+        """
+        if not (np.all(array >= 0) and np.all(array <= 1)):
+            raise ValueError("All values in the array must be between 0 and 1.")
+
+        return 1 - array
 
     def get_gripper_array(self):
         """Getter for gripper array.

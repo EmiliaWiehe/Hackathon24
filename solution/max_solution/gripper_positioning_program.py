@@ -1,5 +1,6 @@
 from processed_part import ProcessedPart
 from processed_gripper import ProcessedGripper
+from gripper_placement import GripperPlacement
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -14,7 +15,7 @@ import cv2  # Optional for better resizing quality
 # Main function
 def main():
     # Load a test image
-    test_image_path = r'C:\Users\singe\Desktop\test_img.png'  # Replace with an actual path
+    test_image_path = r'C:\Users\singe\Desktop\test_img_4.png'  # Replace with an actual path
 
     if os.path.exists(test_image_path):
         
@@ -29,14 +30,19 @@ def main():
         print(com_x, com_y)
 
         # Open the PNG image
-        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\ProKI Hackathon 2024\Rohdaten\part_4\1.png').convert("RGBA")
+        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\ProKI Hackathon 2024\Rohdaten\part_1\4.png').convert("RGBA")
         processed_gripper = ProcessedGripper(gripper)
 
-        svg_array = processed_gripper.get_resized_gripper_array(image_array.width, image_array.height, com_x, com_y, 75)
+        angle = -45
+        svg_array = processed_gripper.get_resized_gripper_array(image_array.width, image_array.height, com_x, com_y, angle)
         gripper_com = processed_gripper.get_gripper_com()
         print(gripper_com)
+
+        gripper_placement = GripperPlacement(processed_part, processed_gripper)
+        print(gripper_placement.check_gripper_position(com_x, com_y, angle, 1.60))
+
         plt.subplot(1, 3, 1)
-        plt.imshow(svg_array)
+        plt.imshow(gripper_placement.get_combined_array(), cmap='gray')  # Combined array
         plt.title("Gripper")
         
         #print(com)

@@ -1,6 +1,7 @@
 from tensorflow.keras import models, preprocessing
 import tensorflow as tf
 from scipy import ndimage
+import numpy as np
 
 class ProcessedPart:
     """Processes a part.png to be able to retrive a mask of the hole positions as well as the center of mass.
@@ -37,12 +38,28 @@ class ProcessedPart:
             tupel(int, int): Index for the part array representing the center of mass.
             First index is the x index, second index is the y index.
         """
-        part_com_float = ndimage.measurements.center_of_mass(self.part_mask)
+        part = self.invert_image(self.part_mask) #Holes should be 0, non-holes should be 1 for com calc.
+        part_com_float = ndimage.measurements.center_of_mass(part)
         part_com = tuple(int(round(x)) for x in part_com_float)
 
         # Reorder the tuple so that first index ist x index and second index is y index.
         part_com_reordered = (part_com[1], part_com[0])
         return part_com_reordered
+    
+    def invert_image(self, array):
+        """
+        Inverts a 2D NumPy array with values between 0 and 1.
+
+        Args:
+            array (np.ndarray): Input 2D array with values between 0 and 1.
+
+        Returns:
+            np.ndarray: Inverted 2D array where each value `x` is replaced by `1 - x`.
+        """
+        if not (np.all(array >= 0) and np.all(array <= 1)):
+            raise ValueError("All values in the array must be between 0 and 1.")
+
+        return 1 - array
 
     def ml_hole_localization(self, part):
         """Uses binary semantic segmentation to classify each pixel of "part" as a hole (1) or non-hole (0).
@@ -58,7 +75,9 @@ class ProcessedPart:
         model = models.load_model(model_dir)
 
         normalized_part = preprocessing.image.img_to_array(part) / 255.0 #Normalize array values between 0 and 1
-            
+        part_outline = self.missing_pixels_to_array_tf(part) #Get a mask of missing pixels (NaN values)
+        print(part_outline)
+
         # Save Original img dimensions
         original_height, original_width = normalized_part.shape[:2]
 
@@ -69,5 +88,33 @@ class ProcessedPart:
         predicted_mask_original_size = tf.image.resize(predicted_mask, [original_height, original_width])
         predicted_mask_original_size = predicted_mask_original_size[0,:,:,0] #Trim additional dimensions
         predicted_mask_original_size = predicted_mask_original_size.numpy() #Convert tf.image to np.array
+        predicted_mask_original_size = predicted_mask_original_size + part_outline #Add missing pixels to the mask
+        predicted_mask_original_size = np.minimum(predicted_mask_original_size, 1) #Clip values to 1
 
         return predicted_mask_original_size
+    
+    def missing_pixels_to_array_tf(self, image):
+        """
+        Converts a tf.image (tf.Tensor) to a 2D NumPy array where missing pixels
+        (pixels with all channel values equal to 0) are represented by 1,
+        and all other pixels by 0.
+
+        Parameters:
+            image (tf.Tensor): Input tf.image (a tensor representing an image).
+
+        Returns:
+            numpy.ndarray: A 2D NumPy array with 1 for missing pixels and 0 otherwise.
+        """
+        # Ensure the input is a TensorFlow tensor
+        image = tf.convert_to_tensor(image)
+        
+        # Identify missing pixels (all channels are zero for a pixel)
+        missing_mask = tf.reduce_all(tf.equal(image, 0), axis=-1)
+        
+        # Convert the missing pixel mask to integer values (1 for missing, 0 for non-missing)
+        missing_mask = tf.cast(missing_mask, tf.int32)
+        
+        # Convert the result to a NumPy array
+        result_array = missing_mask.numpy()
+        
+        return result_array
