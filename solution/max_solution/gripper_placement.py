@@ -2,16 +2,18 @@ from processed_part import ProcessedPart
 from processed_gripper import ProcessedGripper
 import numpy as np
 from collections import deque 
+import matplotlib.pyplot as plt
 
 class GripperPlacement:
 
-    def __init__(self, processed_part, processed_gripper):
+    def __init__(self, processed_part, processed_gripper, collision_threshold):
         self.processed_part = processed_part
-        self.part_mask = processed_part.get_part_mask()
         self.processed_gripper = processed_gripper
+        self.part_mask = processed_part.get_part_mask()
+        self.collision_threshold = collision_threshold
         self.combined_array = None
 
-    def check_gripper_position(self, x, y, angle, collision_threshold):
+    def check_gripper_position(self, x, y, angle):
         """Checks if the gripper can be placed at the given position without colliding with the part.
         To do so, the gripper_array and part_mask are added together. If the sum is greater than the 
         collision_threshold, the gripper is colliding with the part.
@@ -39,22 +41,17 @@ class GripperPlacement:
         self.combined_array = gripper_array + self.part_mask
 
         # Check if the sum exceeds the collision threshold
-        if np.any(self.combined_array > collision_threshold):
+        if np.any(self.combined_array > 1 + self.collision_threshold):
             return False
 
         return True
     
-    def determine_gripper_position(self, collision_threshold):
+    def determine_gripper_position(self):
         """Determines the optimal gripper position to avoid collisions with the part.
         
         The function iterates over all possible gripper positions and angles to find
         the optimal placement that avoids collisions with the part. The gripper is placed
         at the position with the highest possible threshold value.
-
-        Args:
-        collision_threshold (float): Threshold for collision detection. 1 <= collision_threshold <= 2.
-        A threashold of 1 means there will always be a collision detected, a threshold of 2 means there will
-        never be a collision detected.
         
         Returns:
         tuple: A tuple containing the best x, y, and angle values for the gripper.
@@ -70,7 +67,7 @@ class GripperPlacement:
             # Rotate the gripper in 5 degree steps
             for angle in range(0, 360, 5):
                 # Check if the gripper can be placed at the current position
-                if self.check_gripper_position(index[0], index[1], angle, collision_threshold):
+                if self.check_gripper_position(index[0], index[1], angle):
                     return (index[0], index[1], angle)
             
         return None
@@ -184,8 +181,7 @@ class GripperPlacement:
             # Iterate through all possible neighbors
             for dx, dy in directions:
                 nx, ny = x + dx, y + dy
-                
                 # Check if the neighbor is within bounds and not yet visited
-                if 0 <= nx < rows and 0 <= ny < cols and (nx, ny) not in visited:
+                if 0 <= nx < cols and 0 <= ny < rows and (nx, ny) not in visited:
                     visited.add((nx, ny))
                     queue.append((nx, ny))

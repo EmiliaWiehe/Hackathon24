@@ -6,7 +6,7 @@ class ProcessedGripper:
     """Processes a gripper.png to be able to retrive a np.array of the gripper as well as the center of mass.
     """
 
-    def __init__(self, gripper, padding_amount=4):
+    def __init__(self, gripper, padding_amount=2):
         """Generate np.array of gripper and calculate center of mass.
 
         Args:

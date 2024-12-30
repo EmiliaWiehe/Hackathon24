@@ -80,7 +80,7 @@ class ProcessedPart:
             np.array [256, 256]: 256x256 2D np.array with values between 0 and 1. Values closer to 1 are more likely to be holes.
         """
 
-        model_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\model\model_3.keras'
+        model_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\model\model_4.keras'
         model = models.load_model(model_dir)
 
         normalized_part = preprocessing.image.img_to_array(part) / 255.0 #Normalize array values between 0 and 1
@@ -127,7 +127,7 @@ class ProcessedPart:
         
         return result_array
     
-    def calc_collision_threshold(self, part_mask, additional_threshold=0.2):
+    def calc_collision_threshold(self, part_mask, additional_threshold=0.0):
         """Calculates the collision threshold for the gripper to avoid collisions with the part.
         Values of exactly 1 will not count towards the threshold to compensate for missing pixels.
 

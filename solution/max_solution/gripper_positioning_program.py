@@ -12,25 +12,16 @@ from PIL import Image
 import cv2  # Optional for better resizing quality
 import time
 from collections import deque
+import timeit
 
+# Generate large random arrays for testing
+array1 = np.random.randint(0, 100, size=10**8, dtype=np.int32)
+array2 = np.random.randint(0, 100, size=10**8, dtype=np.int32)
 
 # Main function
 def main():
     # Load a test image
-    test_image_path = r'C:\Users\singe\Desktop\test_img_3.png'  # Replace with an actual path
-
-    input_array = np.array([
-        [0, 1, 0],
-        [0, 0, 0],
-        [1, 0, 1]
-    ])
-    padding_amount = 2
-    result = add_padding(input_array, padding_amount)
-    print("Original Array:")
-    print(input_array)
-    print("\nPadded Array:")
-    print(result)
-
+    test_image_path = r'C:\Users\singe\Desktop\part6.png'  # Replace with an actual path
     if os.path.exists(test_image_path):
         
         image_array = tf.keras.preprocessing.image.load_img(test_image_path)
@@ -42,18 +33,34 @@ def main():
         com_x, com_y =   processed_part.get_part_com()
 
         # Open the PNG image
-        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\ProKI Hackathon 2024\Rohdaten\part_1\1.png').convert("RGBA")
-        processed_gripper = ProcessedGripper(gripper, 2)
+        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\ProKI Hackathon 2024\Rohdaten\part_6\5.png').convert("RGBA")
+        processed_gripper = ProcessedGripper(gripper, 1)
 
-        gripper_placement = GripperPlacement(processed_part, processed_gripper)
-        collosion_threshold = 1 + processed_part.get_collision_threshold()
-        print(f"Collision threshold: {collosion_threshold}")
+        collision_threshold = processed_part.get_collision_threshold()
+        gripper_placement = GripperPlacement(processed_part, processed_gripper, collision_threshold)
+        print(f"Collision threshold: {collision_threshold}")
         # Record the start time
         start_time = time.time()
-        gripper_position = gripper_placement.determine_gripper_position(collosion_threshold)
+        gripper_position = gripper_placement.determine_gripper_position()
+        # Record the end time
+        end_time = time.time()
+        # Print the execution time
+        print(f"Execution time: {end_time - start_time} seconds")
         
         if gripper_position is None:
             print("No valid gripper position found.")
+            plt.subplot(1, 3, 3)
+            plt.imshow(predicted_mask, cmap='gray')  # Predicted mask
+            plt.title("Predicted Mask")
+
+            plt.subplot(1, 3, 2)
+            plt.imshow(image_array)  # Original image
+            plt.imshow(processed_gripper.get_resized_gripper_array(image_array.width, image_array.height,
+                                                               com_x, com_y,
+                                                               0), cmap='gray', alpha=0.5)  # Gripper
+            plt.title("Original Image")
+
+            plt.show()
             return
         else:
             print(f"Part center of mass: {com_x, com_y}")
@@ -67,13 +74,8 @@ def main():
                                                                gripper_position[0], gripper_position[1],
                                                                gripper_position[2], processed_gripper.get_gripper_array_unpadded())
         
-        # Record the end time
-        end_time = time.time()
-        # Print the execution time
-        print(f"Execution time: {end_time - start_time} seconds")
         plt.subplot(1, 3, 1)
-        plt.imshow(gripper_placement.get_combined_array() + 
-                   gripper_resized_array, cmap='gray')  # Combined array
+        plt.imshow( gripper_resized_array, cmap='gray')  # Combined array
         plt.title("Gripper")
         
         #print(com)
@@ -91,6 +93,18 @@ def main():
         plt.show()
     else:
         print(f"Error: Test image not found at {test_image_path}")
+
+
+# Define functions to test bitwise XOR and AND
+def test_bitwise_xor():
+    np.bitwise_xor(array1, array2)
+
+def test_bitwise_and():
+    np.bitwise_and(array1, array2)
+
+def test_addtion():
+    np.left_shift(array1, array2)
+
 
 def add_padding(input_array, padding_amount):
     """

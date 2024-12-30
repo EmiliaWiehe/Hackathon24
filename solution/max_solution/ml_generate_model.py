@@ -14,13 +14,35 @@ def unet_model(input_shape=(128, 128, 3), num_classes=1):
     conv1 = layers.Conv2D(64, 3, activation='relu', padding='same')(conv1)
     pool1 = layers.MaxPooling2D(2)(conv1)
 
+    conv2 = layers.Conv2D(128, 3, activation='relu', padding='same')(pool1)
+    conv2 = layers.Conv2D(128, 3, activation='relu', padding='same')(conv2)
+    pool2 = layers.MaxPooling2D(2)(conv2)
+
+    conv3 = layers.Conv2D(256, 3, activation='relu', padding='same')(pool2)
+    conv3 = layers.Conv2D(256, 3, activation='relu', padding='same')(conv3)
+    pool3 = layers.MaxPooling2D(2)(conv3)
+
     # Bottleneck
-    bottleneck = layers.Conv2D(128, 3, activation='relu', padding='same')(pool1)
+    bottleneck = layers.Conv2D(512, 3, activation='relu', padding='same')(pool3)
+    bottleneck = layers.Conv2D(512, 3, activation='relu', padding='same')(bottleneck)
 
     # Decoder
-    up1 = layers.Conv2DTranspose(64, 2, strides=2, activation='relu', padding='same')(bottleneck)
+    up3 = layers.Conv2DTranspose(256, 2, strides=2, activation='relu', padding='same')(bottleneck)
+    up3 = layers.concatenate([up3, conv3])
+    conv4 = layers.Conv2D(256, 3, activation='relu', padding='same')(up3)
+    conv4 = layers.Conv2D(256, 3, activation='relu', padding='same')(conv4)
+
+    up2 = layers.Conv2DTranspose(128, 2, strides=2, activation='relu', padding='same')(conv4)
+    up2 = layers.concatenate([up2, conv2])
+    conv5 = layers.Conv2D(128, 3, activation='relu', padding='same')(up2)
+    conv5 = layers.Conv2D(128, 3, activation='relu', padding='same')(conv5)
+
+    up1 = layers.Conv2DTranspose(64, 2, strides=2, activation='relu', padding='same')(conv5)
     up1 = layers.concatenate([up1, conv1])
-    outputs = layers.Conv2D(num_classes, 1, activation='sigmoid')(up1)
+    conv6 = layers.Conv2D(64, 3, activation='relu', padding='same')(up1)
+    conv6 = layers.Conv2D(64, 3, activation='relu', padding='same')(conv6)
+
+    outputs = layers.Conv2D(num_classes, 1, activation='sigmoid')(conv6)
 
     return models.Model(inputs, outputs)
 
@@ -83,7 +105,7 @@ class ImageMaskGenerator(tf.keras.utils.Sequence):
 # Main function
 def main():
     # Path to save the model to
-    model_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\model\model_3.keras'
+    model_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\model\model_4.keras'
     # Define paths to your data
     image_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\part_2_img\class1'
     mask_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\part_2_mask\class1'
