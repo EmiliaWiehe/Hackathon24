@@ -6,15 +6,17 @@ class ProcessedGripper:
     """Processes a gripper.png to be able to retrive a np.array of the gripper as well as the center of mass.
     """
 
-    def __init__(self, gripper, padding_amount=2):
+    def __init__(self, gripper, padding_amount=1):
         """Generate np.array of gripper and calculate center of mass.
 
         Args:
             gripper (PIL.Image): Image of the gripper.
+            padding_amount (int): Amount of padding to add around the gripper.
         """
         self.gripper_array_unpadded = self.gripper_conversion(gripper)
         self.gripper_array = self.add_padding(self.gripper_array_unpadded, padding_amount)
         self.gripper_com = self.calc_gripper_com(self.gripper_array)
+        self.gripper_symetry = self.count_symmetrical_axes(self.gripper_array)
 
     def calc_gripper_com(self, gripper_array):
         """Calculate the center of mass of the gripper as a tuple of integers.
@@ -86,6 +88,14 @@ class ProcessedGripper:
         gripper_array = self.resize_to_contain_ones(gripper_array)
         gripper_array = self.resize_gripper(gripper_array, image_width, image_height, index_x, index_y)
         return gripper_array
+    
+    def get_symetric_axes(self):
+        """Getter for symetric axes.
+
+        Returns:
+            int: Number of symetric axes in the gripper.
+        """
+        return self.gripper_symetry
     
     def resize_for_rotation(self, array):
         """
@@ -250,3 +260,51 @@ class ProcessedGripper:
                         max(0, c - padding_amount):c + padding_amount + 1] = 1
 
         return padded_array
+        
+    def count_symmetrical_axes(self, image, tolerance=0.8):
+        """
+        Determines the number of symmetrical axes in a 2D numpy array (binary image)
+        by dividing the array along axes and comparing the subarrays as-is.
+        
+        Args:
+            image (np.array): A 2D numpy array with binary values (0 and 1).
+            tolerance (float): The threshold for symmetry (default is 0.9, i.e., 90% similarity).
+            
+        Returns:
+            int: The number of symmetrical axes (0, 1, or 2).
+        """
+        # Ensure the input is a 2D numpy array
+        if not isinstance(image, np.ndarray) or image.ndim != 2:
+            raise ValueError("Input must be a 2D numpy array.")
+        
+        symmetrical_axes = 0
+        rows, cols = image.shape
+
+        # Check vertical symmetry (left-right division)
+        if cols % 2 == 0:  # Even number of columns
+            left_half = image[:, :cols // 2]
+            right_half = image[:, cols // 2:]
+        else:  # Odd number of columns (exclude center column)
+            left_half = image[:, :cols // 2]
+            right_half = image[:, cols // 2 + 1:]
+        
+        vertical_similarity = np.sum(left_half == right_half) / left_half.size
+        if vertical_similarity >= tolerance:
+            symmetrical_axes += 1
+
+        # Check horizontal symmetry (top-bottom division)
+        if rows % 2 == 0:  # Even number of rows
+            top_half = image[:rows // 2, :]
+            bottom_half = image[rows // 2:, :]
+        else:  # Odd number of rows (exclude center row)
+            top_half = image[:rows // 2, :]
+            bottom_half = image[rows // 2 + 1:, :]
+        
+        horizontal_similarity = np.sum(top_half == bottom_half) / top_half.size
+        if horizontal_similarity >= tolerance:
+            symmetrical_axes += 1
+
+        # Print number of symmetrical axes
+        print(f"The gripper was found to have (at least) {symmetrical_axes} symmetrical axes.")
+
+        return symmetrical_axes
