@@ -3,6 +3,7 @@ from processed_gripper import ProcessedGripper
 import numpy as np
 from collections import deque 
 import matplotlib.pyplot as plt
+import time
 
 class GripperPlacement:
 
@@ -62,10 +63,31 @@ class GripperPlacement:
         # Set the part mask com as the starting position
         start_index = self.processed_part.get_part_com()
 
+        # Set the max rotations based on the gripper symmetry
+        match self.processed_gripper.get_symetric_axes():
+            case 0:
+                max_rotations = 360
+            case 1:
+                max_rotations = 180
+            case 2:
+                max_rotations = 90
+            case _:
+                max_rotations = 360
+        
+        max_rotations = 180
+
+        # Limit runtime to 20 seconds
+        start_time = time.time()
+
         # Iterate through the array in radial pattern
         for index in self.radial_iterator(self.part_mask, start_index):
+
+            # Check if the runtime exceeds 20 seconds
+            if time.time() - start_time > 20:
+                return None
+            
             # Rotate the gripper in 5 degree steps
-            for angle in range(0, 360, 5):
+            for angle in range(0, max_rotations, 5):
                 # Check if the gripper can be placed at the current position
                 if self.check_gripper_position(index[0], index[1], angle):
                     return (index[0], index[1], angle)

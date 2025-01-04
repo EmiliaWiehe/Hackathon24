@@ -80,7 +80,7 @@ class ProcessedPart:
             np.array [256, 256]: 256x256 2D np.array with values between 0 and 1. Values closer to 1 are more likely to be holes.
         """
 
-        model_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\model\model_4.keras'
+        model_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\model\model_6.keras'
         model = models.load_model(model_dir)
 
         normalized_part = preprocessing.image.img_to_array(part) / 255.0 #Normalize array values between 0 and 1
@@ -96,8 +96,9 @@ class ProcessedPart:
         predicted_mask_original_size = tf.image.resize(predicted_mask, [original_height, original_width])
         predicted_mask_original_size = predicted_mask_original_size[0,:,:,0] #Trim additional dimensions
         predicted_mask_original_size = predicted_mask_original_size.numpy() #Convert tf.image to np.array
+        self.max_mask_value = np.max(predicted_mask_original_size) #Get the maximum value in the mask
         predicted_mask_original_size = predicted_mask_original_size + part_outline #Add missing pixels to the mask
-        predicted_mask_original_size = np.minimum(predicted_mask_original_size, 1) #Clip values to 1
+        predicted_mask_original_size = np.minimum(predicted_mask_original_size, self.max_mask_value) #Clip values to max_mask_value
 
         return predicted_mask_original_size
     
@@ -142,7 +143,7 @@ class ProcessedPart:
         num_pixels = part_mask.size
 
         # Replace all values of exactly 1 with 0 to compensate for missing pixels
-        part_mask = np.where(part_mask == 1, 0, part_mask)
+        part_mask = np.where(part_mask == self.max_mask_value, 0, part_mask)
         
         # Calculate the number of hole pixels
         num_holes = np.sum(part_mask)
@@ -153,6 +154,6 @@ class ProcessedPart:
     
         
         # Calculate the collision threshold
-        collision_threshold = num_holes / adjusted_num_pixels + additional_threshold
+        collision_threshold = 1.2 * num_holes / adjusted_num_pixels + additional_threshold
         
         return collision_threshold

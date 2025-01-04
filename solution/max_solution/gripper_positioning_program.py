@@ -21,11 +21,18 @@ array2 = np.random.randint(0, 100, size=10**8, dtype=np.int32)
 # Main function
 def main():
     # Load a test image
-    test_image_path = r'C:\Users\singe\Desktop\part6.png'  # Replace with an actual path
+    test_image_path = r'C:\\Users\\singe\\Documents\\Desktop\\KIT\\11. Semester\\ProKI\\All Parts\\mask_20241202-164923-044.png'  # Replace with an actual path
     if os.path.exists(test_image_path):
         
         image_array = tf.keras.preprocessing.image.load_img(test_image_path)
+
+        # Record the start time
+        start_time = time.time()
         processed_part = ProcessedPart(image_array)
+        #  Record the end time
+        end_time = time.time()
+        # Print the execution time
+        print(f"Get part mask execution time: {end_time - start_time} seconds")
 
         # Predict mask
         predicted_mask = processed_part.get_part_mask()
@@ -33,8 +40,8 @@ def main():
         com_x, com_y =   processed_part.get_part_com()
 
         # Open the PNG image
-        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\ProKI Hackathon 2024\Rohdaten\part_6\5.png').convert("RGBA")
-        processed_gripper = ProcessedGripper(gripper, 1)
+        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\2\2.png').convert("RGBA")
+        processed_gripper = ProcessedGripper(gripper, 2)
 
         collision_threshold = processed_part.get_collision_threshold()
         gripper_placement = GripperPlacement(processed_part, processed_gripper, collision_threshold)
@@ -45,7 +52,7 @@ def main():
         # Record the end time
         end_time = time.time()
         # Print the execution time
-        print(f"Execution time: {end_time - start_time} seconds")
+        print(f"Determine position execution time: {end_time - start_time} seconds")
         
         if gripper_position is None:
             print("No valid gripper position found.")
@@ -57,7 +64,7 @@ def main():
             plt.imshow(image_array)  # Original image
             plt.imshow(processed_gripper.get_resized_gripper_array(image_array.width, image_array.height,
                                                                com_x, com_y,
-                                                               0), cmap='gray', alpha=0.5)  # Gripper
+                                                               90), cmap='gray', alpha=0.5)  # Gripper
             plt.title("Original Image")
 
             plt.show()

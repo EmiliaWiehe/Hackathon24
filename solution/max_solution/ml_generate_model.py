@@ -105,7 +105,7 @@ class ImageMaskGenerator(tf.keras.utils.Sequence):
 # Main function
 def main():
     # Path to save the model to
-    model_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\model\model_4.keras'
+    model_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\model\model_6.keras'
     # Define paths to your data
     image_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\part_2_img\class1'
     mask_dir = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Program Files\part_2_mask\class1'
