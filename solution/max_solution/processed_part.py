@@ -1,5 +1,6 @@
 from tensorflow.keras import models, preprocessing
-import tensorflow as tf
+from tensorflow.image import resize
+from tensorflow import expand_dims, convert_to_tensor, reduce_all, equal, cast, int32
 from scipy import ndimage
 import numpy as np
 
@@ -15,6 +16,7 @@ class ProcessedPart:
         self.part_mask = self.ml_hole_localization(part)
         self.part_com = self.calc_part_com()
         self.collision_threshold = self.calc_collision_threshold(self.part_mask)
+        self.binary_part_mask = self.convert_to_binary_part_mask(self.part_mask, self.collision_threshold)
 
     def get_part_mask(self):
         """Getter for the part mask.
@@ -23,6 +25,14 @@ class ProcessedPart:
             np.array: The part mask as an array with the size of the original part. Closer to 1 = likely a hole.
         """
         return self.part_mask
+    
+    def get_binary_part_mask(self):
+        """Getter for the binary part mask.
+
+        Returns:
+            np.array: The binary part mask as an array with the size of the original part. 1 = hole, 0 = non-hole.
+        """
+        return self.binary_part_mask
     
     def get_part_com(self):
         """Getter for the part center of mass.
@@ -89,11 +99,11 @@ class ProcessedPart:
         # Save Original img dimensions
         original_height, original_width = normalized_part.shape[:2]
 
-        normalized_part = tf.image.resize(normalized_part, [256, 256]) #model only accepts 256x256 images
-        normalized_part = tf.expand_dims(normalized_part, axis=0)  # Add batch dimension
+        normalized_part = resize(normalized_part, [256, 256]) #model only accepts 256x256 images
+        normalized_part = expand_dims(normalized_part, axis=0)  # Add batch dimension
 
         predicted_mask = model.predict(normalized_part)
-        predicted_mask_original_size = tf.image.resize(predicted_mask, [original_height, original_width])
+        predicted_mask_original_size = resize(predicted_mask, [original_height, original_width])
         predicted_mask_original_size = predicted_mask_original_size[0,:,:,0] #Trim additional dimensions
         predicted_mask_original_size = predicted_mask_original_size.numpy() #Convert tf.image to np.array
         self.max_mask_value = np.max(predicted_mask_original_size) #Get the maximum value in the mask
@@ -101,6 +111,23 @@ class ProcessedPart:
         predicted_mask_original_size = np.minimum(predicted_mask_original_size, self.max_mask_value) #Clip values to max_mask_value
 
         return predicted_mask_original_size
+    
+    def convert_to_binary_part_mask(self, part_mask, threshold):
+        """
+        Converts a part mask to a binary mask based on a given threshold.
+
+        Args:
+            part_mask (np.ndarray): Input 2D NumPy array with values between 0 and 1.
+            threshold (float): The threshold value to determine the binary mask.
+
+        Returns:
+            np.ndarray: A binary 2D NumPy array with values of 0 or 1.
+        """
+        if not (np.all(part_mask >= 0) and np.all(part_mask <= 1)):
+            raise ValueError("All values in the array must be between 0 and 1.")
+
+        binary_part_mask = np.where(part_mask > threshold, 1, 0)
+        return binary_part_mask
     
     def missing_pixels_to_array_tf(self, image):
         """
@@ -115,13 +142,13 @@ class ProcessedPart:
             numpy.ndarray: A 2D NumPy array with 1 for missing pixels and 0 otherwise.
         """
         # Ensure the input is a TensorFlow tensor
-        image = tf.convert_to_tensor(image)
+        image = convert_to_tensor(image)
         
         # Identify missing pixels (all channels are zero for a pixel)
-        missing_mask = tf.reduce_all(tf.equal(image, 0), axis=-1)
+        missing_mask = reduce_all(equal(image, 0), axis=-1)
         
         # Convert the missing pixel mask to integer values (1 for missing, 0 for non-missing)
-        missing_mask = tf.cast(missing_mask, tf.int32)
+        missing_mask = cast(missing_mask, int32)
         
         # Convert the result to a NumPy array
         result_array = missing_mask.numpy()

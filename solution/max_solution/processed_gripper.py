@@ -223,6 +223,38 @@ class ProcessedGripper:
         resized_gripper[start_y:end_y, start_x:end_x] = gripper_array
         return resized_gripper
     
+    def place_gripper(self, gripper_array, image_width, image_height, index_x, index_y):
+        """Resizes the gripper array to the given image dimensions and places the center of mass at the given index.
+
+        Args:
+            gripper_array (np.ndarray): 2D binary numpy array representing the gripper.
+            image_width (int): Width of the image.
+            image_height (int): Height of the image.
+            index_x (int): x index for the gripper array representing the center of mass.
+            index_y (int): y index for the gripper array representing the center of mass.
+
+        Returns:
+            np.ndarray: Resized 2D binary numpy array.
+        """
+        resized_gripper = np.zeros((image_height, image_width))
+        com_x, com_y = self.calc_gripper_com(self.gripper_array_unpadded)
+        start_x = index_x - int(com_x)
+        start_y = index_y - int(com_y)
+        end_x = start_x + gripper_array.shape[1]
+        end_y = start_y + gripper_array.shape[0]
+
+        if start_x < 0:
+            raise ValueError("Gripper array cannot be placed at the given index: start_x is out of bounds.")
+        if start_y < 0:
+            raise ValueError("Gripper array cannot be placed at the given index: start_y is out of bounds.")
+        if end_x > image_width:
+            raise ValueError("Gripper array cannot be placed at the given index: end_x exceeds image width.")
+        if end_y > image_height:
+            raise ValueError("Gripper array cannot be placed at the given index: end_y exceeds image height.")
+
+        resized_gripper[start_y:end_y, start_x:end_x] = gripper_array
+        return resized_gripper
+    
     def add_padding(self, input_array, padding_amount):
         """
         Adds padding around entries with a 1 in a 2D numpy array.

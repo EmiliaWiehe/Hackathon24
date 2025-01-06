@@ -1,30 +1,21 @@
 from processed_part import ProcessedPart
 from processed_gripper import ProcessedGripper
-from gripper_placement import GripperPlacement
+from gripper_placement_optimized import GripperPlacementOptimized
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from scipy import ndimage
-import tensorflow as tf
-import numpy as np
-import numpy as np
+from tensorflow.keras.preprocessing.image import load_img
 from PIL import Image
-import cv2  # Optional for better resizing quality
 import time
-from collections import deque
-import timeit
-
-# Generate large random arrays for testing
-array1 = np.random.randint(0, 100, size=10**8, dtype=np.int32)
-array2 = np.random.randint(0, 100, size=10**8, dtype=np.int32)
 
 # Main function
 def main():
     # Load a test image
-    test_image_path = r'C:\\Users\\singe\\Documents\\Desktop\\KIT\\11. Semester\\ProKI\\All Parts\\mask_20241202-164923-044.png'  # Replace with an actual path
+    print("Starting gripper positioning program...")
+    test_image_path = r'C:\\Users\\singe\\Documents\\Desktop\\KIT\\11. Semester\\ProKI\\All Parts\\mask_20241202-114315-549.png'  # Replace with an actual path
     if os.path.exists(test_image_path):
         
-        image_array = tf.keras.preprocessing.image.load_img(test_image_path)
+        image_array = load_img(test_image_path)
 
         # Record the start time
         start_time = time.time()
@@ -34,21 +25,21 @@ def main():
         # Print the execution time
         print(f"Get part mask execution time: {end_time - start_time} seconds")
 
-        # Predict mask
+        # Predict maskh
         predicted_mask = processed_part.get_part_mask()
 
         com_x, com_y =   processed_part.get_part_com()
 
         # Open the PNG image
-        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\2\2.png').convert("RGBA")
+        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\1\1.png').convert("RGBA")
         processed_gripper = ProcessedGripper(gripper, 2)
 
         collision_threshold = processed_part.get_collision_threshold()
-        gripper_placement = GripperPlacement(processed_part, processed_gripper, collision_threshold)
+        gripper_placement = GripperPlacementOptimized(processed_part, processed_gripper, collision_threshold)
         print(f"Collision threshold: {collision_threshold}")
         # Record the start time
         start_time = time.time()
-        gripper_position = gripper_placement.determine_gripper_position()
+        gripper_position = gripper_placement.determine_gripper_position_opt()
         # Record the end time
         end_time = time.time()
         # Print the execution time
@@ -64,7 +55,7 @@ def main():
             plt.imshow(image_array)  # Original image
             plt.imshow(processed_gripper.get_resized_gripper_array(image_array.width, image_array.height,
                                                                com_x, com_y,
-                                                               90), cmap='gray', alpha=0.5)  # Gripper
+                                                               0), cmap='gray', alpha=0.5)  # Gripper
             plt.title("Original Image")
 
             plt.show()
@@ -94,7 +85,8 @@ def main():
         plt.title("Original Image")
 
         plt.subplot(1, 3, 3)
-        plt.imshow(predicted_mask, cmap='gray')  # Predicted mask
+        #plt.imshow(predicted_mask, cmap='gray')  # Predicted mask
+        plt.imshow(processed_part.get_binary_part_mask(), cmap='gray')  # Predicted mask
         plt.title("Predicted Mask")
 
         plt.show()
