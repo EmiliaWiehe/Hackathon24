@@ -4,8 +4,6 @@ import sys
 import random
 from utils import ML_prediction
 from model import SimpleCNN
-from gripper_placement import GripperPlacement
-from processed_gripper import ProcessedGripper
 from processed_part import ProcessedPart
 import torch
 from torch.utils.data import Dataset, DataLoader
