@@ -11,44 +11,17 @@ class GripperPlacementOptimized:
     def __init__(self, processed_part, processed_gripper, collision_threshold):
         self.processed_part = processed_part
         self.processed_gripper = processed_gripper
-        self.part_mask = processed_part.get_part_mask()
-        self.collision_threshold = collision_threshold
-        self.combined_array = None
-        self.rotation_step = 5
-        self.radial_iterator_step = 4
 
-    def check_gripper_position(self, x, y, angle):
-        """Checks if the gripper can be placed at the given position without colliding with the part.
-        To do so, the gripper_array and part_mask are added together. If the sum is greater than the 
-        collision_threshold, the gripper is colliding with the part.
+        # Get half the width of the padded gripper array
+        half_gripper_width = processed_gripper.gripper_array_padded.shape[1] // 2
+        
+        # Add this half width as padding to the binary part mask
+        self.resized_binary_part_mask = np.pad(processed_part.get_binary_part_mask(), 
+            pad_width=half_gripper_width, mode='constant', constant_values=1)
+        # Note the offset for the indexes incured by resizing the part mask
+        self.offset = half_gripper_width
+    
 
-        Args:
-            x (int): x index for the gripper array representing the center of mass.
-            y (int): y index for the gripper array representing the center of mass.
-            angle (int): Angle of the gripper.
-            collision_threshold (float): Threshold for collision detection. 1 <= collision_threshold <= 2.
-            A threashold of 1 means there will always be a collision detected, a threshold of 2 means there will 
-            never be a collision detected.
-
-        Returns:
-            bool: True if the gripper can be placed at the given position without colliding with the part.
-        """
-        # Get the resized gripper array
-        try:
-            gripper_array = self.processed_gripper.get_resized_gripper_array(
-                self.part_mask.shape[1], self.part_mask.shape[0], x, y, angle
-            )
-        except ValueError:
-            return False
-
-        # Add the gripper array and the part mask
-        self.combined_array = gripper_array + self.part_mask
-
-        # Check if the sum exceeds the collision threshold
-        if np.any(self.combined_array > 1 + self.collision_threshold):
-            return False
-
-        return True
         
     def print_binary_int64(self, num):
         """
@@ -70,21 +43,22 @@ class GripperPlacementOptimized:
         print(binary_representation)
         
     def check_all_gripper_rotations(self, x, y, rotation_steps=8, total_rotation=360):
-        binary_part_mask = self.processed_part.get_binary_part_mask()
-        binary_part_mask = binary_part_mask.astype(np.int64)
+        binary_part_mask = self.resized_binary_part_mask.astype(np.int64)
         # Multiply each element of binary_part_mask by 2^62
         binary_part_mask = binary_part_mask * 2**62
 
-        binary_part_mask_width, binary_part_mask_height = binary_part_mask.shape
+        binary_part_mask_height, binary_part_mask_width = binary_part_mask.shape
 
-
-        overlayed_rotations = self.get_overlayed_rotations_gripper_array(
-            initial_power=1, rotation_step=rotation_steps, total_rotation=total_rotation)
+        overlayed_rotations = self.processed_gripper.get_binary_encoded_rotation_array(
+            self.processed_gripper.gripper_array_padded, initial_power=1, 
+            rotation_step=rotation_steps, total_rotation=total_rotation)
+        
+        
         overlayed_rotations_placed = self.processed_gripper.place_gripper(
-            overlayed_rotations, binary_part_mask_height, binary_part_mask_width, x, y)
+            overlayed_rotations, binary_part_mask_width, binary_part_mask_height, x, y)
         overlayed_rotations_placed = overlayed_rotations_placed.astype(np.int64)
 
-        part_and_rotations = overlayed_rotations_placed + binary_part_mask
+        part_and_rotations = np.bitwise_or(overlayed_rotations_placed, binary_part_mask)
         part_and_rotations = part_and_rotations.astype(np.int64)
 
 
@@ -95,14 +69,14 @@ class GripperPlacementOptimized:
         # Subtract 2^62 from all elemets of unique_elemets
         unique_elements = {element - 2**62 for element in unique_elements} 
 
-
         binary_number = self.bitwise_or_on_set(unique_elements).astype(np.int64)
 
         encoded_rotation = self.get_powers_not_in_number(binary_number, total_rotation // rotation_steps)
 
         # if the encoded rotation is not empty, return the first element
         if encoded_rotation:
-            return encoded_rotation.pop() * rotation_steps
+            angle = encoded_rotation.pop() * rotation_steps
+            return angle
         
         return None
 
@@ -139,83 +113,11 @@ class GripperPlacementOptimized:
         """Returns a set of all unique elements in the input array which
         are greater than 2^62."""
         return set(array[array > 2**62])
-
-    def get_overlayed_rotations_gripper_array(self, initial_power=1, rotation_step=8, total_rotation=360):
-        # Get the gripper array
-        gripper_array = self.processed_gripper.get_gripper_array()
-        rotateable_gripper_array = self.processed_gripper.resize_for_rotation(gripper_array)
-
-        # Ensure the array is of the correct size and binary
-        assert np.array_equal(rotateable_gripper_array, rotateable_gripper_array.astype(bool)), "Array must contain only 0s and 1s."
-
-        result_array = np.zeros_like(rotateable_gripper_array, dtype=np.int64)
-
-        num_steps = total_rotation // rotation_step
-        for step in range(num_steps):
-            # Rotate the array
-            rotated_array = rotate(rotateable_gripper_array, angle=rotation_step * (step + 1), reshape=False, order=1)
-
-            # Threshold rotated array to make it binary
-            rotated_array = (rotated_array >= 0.5).astype(np.int64)
-
-            # Scale the ones by the current power of two
-            scaled_array = rotated_array * (2 ** (initial_power + step))
-
-            # Accumulate the result
-            result_array = np.bitwise_or(result_array, scaled_array)
-
-        # Add the original array to the result
-        result_array = np.bitwise_or(result_array, rotateable_gripper_array * (2 ** initial_power))
-
-        return result_array
-
-    def determine_gripper_position(self):
-        """Determines the optimal gripper position to avoid collisions with the part.
-        
-        The function iterates over all possible gripper positions and angles to find
-        the optimal placement that avoids collisions with the part. The gripper is placed
-        at the position with the highest possible threshold value.
-        
-        Returns:
-        tuple: A tuple containing the best x, y, and angle values for the gripper.
-        """
-        # Get all valid gripper positions
-        #placable_gripper_positions = self.get_placeable_gripper_positions()
-
-        # Set the part mask com as the starting position
-        start_index = self.processed_part.get_part_com()
-
-        # Set the max rotations based on the gripper symmetry
-        match self.processed_gripper.get_symetric_axes():
-            case 0:
-                max_rotations = 360
-            case 1:
-                max_rotations = 180
-            case 2:
-                max_rotations = 90
-            case _:
-                max_rotations = 360
-        
-        max_rotations = self.rotation_step
-
-        # Limit runtime to 20 seconds
-        start_time = time.time()
-
-        # Iterate through the array in radial pattern
-        for index in self.radial_iterator(self.part_mask, start_index, self.radial_iterator_step):
-
-            # Check if the runtime exceeds 20 seconds
-            if time.time() - start_time > 200:
-                return None
-            
-            # Rotate the gripper in 5 degree steps
-            for angle in range(0, max_rotations, self.rotation_step):
-                print(f"Checking position {index} with angle {angle}")
-                # Check if the gripper can be placed at the current position
-                if self.check_gripper_position(index[0], index[1], angle):
-                    return (index[0], index[1], angle)
-            
-        return None
+    
+    def get_resized_part_com(self):
+        """Returns the center of mass in the coordinates of the resized part array."""
+        return (self.processed_part.get_part_com()[0] + self.offset, 
+            self.processed_part.get_part_com()[1] + self.offset)
     
     def determine_gripper_position_opt(self):
         """Determines the optimal gripper position to avoid collisions with the part.
@@ -231,13 +133,16 @@ class GripperPlacementOptimized:
         #placable_gripper_positions = self.get_placeable_gripper_positions()
 
         # Set the part mask com as the starting position
-        start_index = self.processed_part.get_part_com()
+        start_index = self.get_resized_part_com()
 
         # Limit runtime to 20 seconds
         start_time = time.time()
 
+        counter = 0
+
         # Iterate through the array in radial pattern
-        for index in self.radial_iterator(self.part_mask, start_index, self.radial_iterator_step):
+        for index in self.radial_iterator(self.resized_binary_part_mask, start_index, 4):
+            counter += 1
 
             # Check if the runtime exceeds 20 seconds
             if time.time() - start_time > 200:
@@ -249,76 +154,12 @@ class GripperPlacementOptimized:
                 return None
             # If valid angle is not None, return the position and angle
             if valid_angle is not None:
-                return (index[0], index[1], valid_angle)
+                print(f"Counter: {counter}")
+                return (index[0] - self.offset, index[1] - self.offset, valid_angle)
             
         return None
     
-    def get_placeable_gripper_positions(self):
-        """Uses the smallest_square_array method on the gripper to get all x and y positions for the gripper 
-        which are within the bounds of the part mask. The x and y positions represent the center of mass 
-        of the gripper.
-        
-        Returns: 
-            np.array: 2D numpy array with all possible x and y positions for the gripper.
-        """
-        
-        # Get the gripper array
-        gripper_array = self.processed_gripper.get_gripper_array()
-        
-        # Get the smallest square array of the gripper
-        square_gripper = self.smallest_square_array(gripper_array)
-        
-        # Get the dimensions of the gripper
-        rows, cols = square_gripper.shape
-        
-        # Get the dimensions of the part mask
-        part_rows, part_cols = self.part_mask.shape
 
-        # Get gripper center of mass
-        g_com_x, g_com_y = self.processed_gripper.get_gripper_com()
-        
-        # Initialize the list of placeable gripper positions
-        placeable_positions = []
-        
-        # Iterate over all possible positions
-        for x in range(part_cols - cols + 1):
-            for y in range(part_rows - rows + 1):
-                placeable_positions.append((x + g_com_x, y + g_com_y))
-        
-        return np.array(placeable_positions)
-    
-    def smallest_square_array(cls, arr):
-        """
-        Squares a 2D NumPy array by cropping it to a square shape.
-        
-        The resulting array will have dimensions equal to the smaller of the
-        two dimensions of the input array (rows or columns).
-        
-        Args:
-        arr (numpy.ndarray): The input 2D array which may not be square.
-        
-        Returns:
-        numpy.ndarray: A square sub-array with dimensions equal to the smaller
-                       of the input array's dimensions.
-        """
-        # Get the dimensions of the input array
-        rows, cols = arr.shape
-        
-        # Find the size of the smaller dimension
-        size = min(rows, cols)
-        
-        # Crop the array to the square size
-        square_arr = arr[:size, :size]
-        
-        return square_arr
-    
-    def get_combined_array(self):
-        """Getter for the combined array.
-
-        Returns:
-            np.ndarray: 2D np.array with the gripper and part mask added together.
-        """
-        return self.combined_array
     
     def radial_iterator(self, arr, start_index, step_size):
         """

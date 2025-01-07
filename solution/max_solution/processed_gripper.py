@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import ndimage
+from scipy.ndimage import rotate
 import math
 
 class ProcessedGripper:
@@ -13,59 +14,21 @@ class ProcessedGripper:
             gripper (PIL.Image): Image of the gripper.
             padding_amount (int): Amount of padding to add around the gripper.
         """
-        self.gripper_array_unpadded = self.gripper_conversion(gripper)
-        self.gripper_array = self.add_padding(self.gripper_array_unpadded, padding_amount)
-        self.gripper_com = self.calc_gripper_com(self.gripper_array)
-        self.gripper_symetry = self.count_symmetrical_axes(self.gripper_array)
+        self.gripper_array_unpadded = self.resize_for_rotation(self.gripper_conversion(gripper))
+        self.gripper_array_padded = self.resize_for_rotation(
+            self.add_padding(self.gripper_array_unpadded, padding_amount))
 
     def calc_gripper_com(self, gripper_array):
-        """Calculate the center of mass of the gripper as a tuple of integers.
+        """Calculate the center of mass for the gripper array.
 
         Args:
             gripper_array (np.ndarray): 2D binary numpy array representing the gripper.
 
         Returns:
-            tupel(int, int): Index for the gripper array representing the center of mass.
-            First index is the x index, second index is the y index.
+            tuple: Tuple of floats representing the center of mass (x, y).
         """
-        gripper = self.invert_image(gripper_array)  # Gripper should be 0, non-gripper should be 1 for com calc.
-        gripper_com_float = ndimage.measurements.center_of_mass(gripper)
-        gripper_com = tuple(int(round(x)) for x in gripper_com_float)
-
-        # Reorder the tuple so that first index ist x index and second index is y index.
-        gripper_com_reordered = (gripper_com[1], gripper_com[0])
-        return gripper_com_reordered
-    
-    def invert_image(self, array):
-        """
-        Inverts a 2D NumPy array with values between 0 and 1.
-
-        Args:
-            array (np.ndarray): Input 2D array with values between 0 and 1.
-
-        Returns:
-            np.ndarray: Inverted 2D array where each value `x` is replaced by `1 - x`.
-        """
-        if not (np.all(array >= 0) and np.all(array <= 1)):
-            raise ValueError("All values in the array must be between 0 and 1.")
-
-        return 1 - array
-
-    def get_gripper_array(self):
-        """Getter for gripper array.
-
-        Returns:
-            np.ndarray: 2D binary np.array with 1 representing the gripper geometry.
-        """
-        return self.gripper_array
-    
-    def get_gripper_array_unpadded(self):
-        """Getter for unpadded gripper array.
-
-        Returns:
-            np.ndarray: 2D binary np.array with 1 representing the gripper geometry.
-        """
-        return self.gripper_array_unpadded
+        com_x, com_y = gripper_array.shape[1] / 2, gripper_array.shape[0] / 2
+        return com_x, com_y
     
     def get_resized_gripper_array(self, image_width, image_height, index_x, index_y, angle, gripper_array=None):
         """Getter for resized gripper array. Resizes the gripper array to the given image dimensions,
@@ -82,20 +45,13 @@ class ProcessedGripper:
             np.ndarray: 2D binary np.array with 1 representing the gripper geometry.
         """
         if gripper_array is None:
-            gripper_array = self.gripper_array
+            gripper_array = self.gripper_array_unpadded
         gripper_array = self.resize_for_rotation(gripper_array)
         gripper_array = self.rotate_image(gripper_array, angle)
         gripper_array = self.resize_to_contain_ones(gripper_array)
         gripper_array = self.resize_gripper(gripper_array, image_width, image_height, index_x, index_y)
         return gripper_array
     
-    def get_symetric_axes(self):
-        """Getter for symetric axes.
-
-        Returns:
-            int: Number of symetric axes in the gripper.
-        """
-        return self.gripper_symetry
     
     def resize_for_rotation(self, array):
         """
@@ -154,14 +110,6 @@ class ProcessedGripper:
         
         return resized_array
     
-    def get_gripper_com(self):
-        """Getter for gripper center of mass.
-
-        Returns:
-            tupel(np.float, np.float): (x,y) - index for the gripper array representing the center of mass.
-        """
-        return self.gripper_com
-
     def gripper_conversion(self, gripper):
         """Converts a PNG file to a numpy array with binary values (0 for transparent pixels, 1 for others).
 
@@ -223,6 +171,37 @@ class ProcessedGripper:
         resized_gripper[start_y:end_y, start_x:end_x] = gripper_array
         return resized_gripper
     
+    def check_out_of_bounds(self, image_width, image_height, index_x, index_y, gripper_array):
+        """Check if the gripper is out of bounds. Return all values of the
+        array which are out of bounds as a set.
+
+        Args:
+            image_width (int): Width of the image.
+            image_height (int): Height of the image.
+            index_x (int): x index for the gripper array representing the center of mass.
+            index_y (int): y index for the gripper array representing the center of mass.
+            gripper_array (np.ndarray): 2D binary numpy array representing the gripper.
+
+        Returns:
+            set: Set of all values of the array which are out of bounds.
+        """
+        start_x = index_x - int(self.gripper_com[0])
+        start_y = index_y - int(self.gripper_com[1])
+        end_x = start_x + gripper_array.shape[1]
+        end_y = start_y + gripper_array.shape[0]
+
+        out_of_bounds = set()
+        if start_x < 0:
+            out_of_bounds.update(gripper_array[:, :abs(start_x)].flatten())
+        if start_y < 0:
+            out_of_bounds.update(gripper_array[:abs(start_y), :].flatten())
+        if end_x > image_width:
+            out_of_bounds.update(gripper_array[:, -(end_x - image_width):].flatten())
+        if end_y > image_height:
+            out_of_bounds.update(gripper_array[-(end_y - image_height):, :].flatten())
+
+        return out_of_bounds
+
     def place_gripper(self, gripper_array, image_width, image_height, index_x, index_y):
         """Resizes the gripper array to the given image dimensions and places the center of mass at the given index.
 
@@ -237,7 +216,7 @@ class ProcessedGripper:
             np.ndarray: Resized 2D binary numpy array.
         """
         resized_gripper = np.zeros((image_height, image_width))
-        com_x, com_y = self.calc_gripper_com(self.gripper_array_unpadded)
+        com_x, com_y = gripper_array.shape[1] / 2, gripper_array.shape[0] / 2
         start_x = index_x - int(com_x)
         start_y = index_y - int(com_y)
         end_x = start_x + gripper_array.shape[1]
@@ -254,6 +233,44 @@ class ProcessedGripper:
 
         resized_gripper[start_y:end_y, start_x:end_x] = gripper_array
         return resized_gripper
+    
+    def get_binary_encoded_rotation_array(self, gripper_array, initial_power=1, rotation_step=8, total_rotation=360):
+        """
+        Rotates the gripper array by increments. Each increment is encoded as a power of two.
+
+        Args:
+            gripper_array (np.ndarray): Square array, resized for rotation with only zeros and ones.
+            initial_power (int): The starting power for scaling ones (default is 1).
+            rotation_step (int): The step size for rotation in degrees (default is 8).
+            total_rotation (int): Total rotation in degrees (default is 360).
+
+        Returns:
+            np.ndarray: The resulting array after all rotations and bitwise OR operations.
+        """
+
+        # Ensure the array is of the correct size and binary
+        assert np.array_equal(gripper_array, gripper_array.astype(bool)), "Array must contain only 0s and 1s."
+
+        result_array = np.zeros_like(gripper_array, dtype=np.int64)
+
+        num_steps = total_rotation // rotation_step
+        for step in range(num_steps):
+            # Rotate the array
+            rotated_array = rotate(gripper_array, angle=rotation_step * (step + 1), reshape=False, order=1)
+
+            # Threshold rotated array to make it binary
+            rotated_array = (rotated_array >= 0.5).astype(np.int64)
+
+            # Scale the ones by the current power of two
+            scaled_array = rotated_array * (2 ** (initial_power + step))
+
+            # Accumulate the result
+            result_array = np.bitwise_or(result_array, scaled_array)
+
+        # Add the original array to the result
+        result_array = np.bitwise_or(result_array, gripper_array * (2 ** initial_power))
+
+        return result_array
     
     def add_padding(self, input_array, padding_amount):
         """
@@ -292,51 +309,3 @@ class ProcessedGripper:
                         max(0, c - padding_amount):c + padding_amount + 1] = 1
 
         return padded_array
-        
-    def count_symmetrical_axes(self, image, tolerance=0.8):
-        """
-        Determines the number of symmetrical axes in a 2D numpy array (binary image)
-        by dividing the array along axes and comparing the subarrays as-is.
-        
-        Args:
-            image (np.array): A 2D numpy array with binary values (0 and 1).
-            tolerance (float): The threshold for symmetry (default is 0.9, i.e., 90% similarity).
-            
-        Returns:
-            int: The number of symmetrical axes (0, 1, or 2).
-        """
-        # Ensure the input is a 2D numpy array
-        if not isinstance(image, np.ndarray) or image.ndim != 2:
-            raise ValueError("Input must be a 2D numpy array.")
-        
-        symmetrical_axes = 0
-        rows, cols = image.shape
-
-        # Check vertical symmetry (left-right division)
-        if cols % 2 == 0:  # Even number of columns
-            left_half = image[:, :cols // 2]
-            right_half = image[:, cols // 2:]
-        else:  # Odd number of columns (exclude center column)
-            left_half = image[:, :cols // 2]
-            right_half = image[:, cols // 2 + 1:]
-        
-        vertical_similarity = np.sum(left_half == right_half) / left_half.size
-        if vertical_similarity >= tolerance:
-            symmetrical_axes += 1
-
-        # Check horizontal symmetry (top-bottom division)
-        if rows % 2 == 0:  # Even number of rows
-            top_half = image[:rows // 2, :]
-            bottom_half = image[rows // 2:, :]
-        else:  # Odd number of rows (exclude center row)
-            top_half = image[:rows // 2, :]
-            bottom_half = image[rows // 2 + 1:, :]
-        
-        horizontal_similarity = np.sum(top_half == bottom_half) / top_half.size
-        if horizontal_similarity >= tolerance:
-            symmetrical_axes += 1
-
-        # Print number of symmetrical axes
-        print(f"The gripper was found to have (at least) {symmetrical_axes} symmetrical axes.")
-
-        return symmetrical_axes

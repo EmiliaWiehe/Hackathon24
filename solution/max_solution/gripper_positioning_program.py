@@ -12,7 +12,7 @@ import time
 def main():
     # Load a test image
     print("Starting gripper positioning program...")
-    test_image_path = r'C:\\Users\\singe\\Documents\\Desktop\\KIT\\11. Semester\\ProKI\\All Parts\\mask_20241202-114315-549.png'  # Replace with an actual path
+    test_image_path = r'C:\\Users\\singe\\Documents\\Desktop\\KIT\\11. Semester\\ProKI\\All Parts\\mask_20241126-142218-067.png'  # Replace with an actual path
     if os.path.exists(test_image_path):
         
         image_array = load_img(test_image_path)
@@ -70,7 +70,7 @@ def main():
         
         gripper_resized_array = processed_gripper.get_resized_gripper_array(image_array.width, image_array.height,
                                                                gripper_position[0], gripper_position[1],
-                                                               gripper_position[2], processed_gripper.get_gripper_array_unpadded())
+                                                               gripper_position[2], processed_gripper.gripper_array_unpadded)
         
         plt.subplot(1, 3, 1)
         plt.imshow( gripper_resized_array, cmap='gray')  # Combined array
