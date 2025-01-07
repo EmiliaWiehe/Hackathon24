@@ -4,6 +4,9 @@ import sys
 import random
 from utils import ML_prediction
 from model import SimpleCNN
+from gripper_placement import GripperPlacement
+from processed_gripper import ProcessedGripper
+from processed_part import ProcessedPart
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
@@ -39,14 +42,19 @@ def main(input_csv, output_path):
             print(f"Part path: {part_path}, Gripper path: {gripper_path}")
 
 
-            # Max code
-            # analytic_result = max_function(image, output_path)
+            # Create a part mask to identify the holes
+            processed_gripper = ProcessedGripper(gripper_path, 2)
+            # Convert the gripper image to a numpy array
+            processed_part = ProcessedPart(part_path)
+            # Determine the optimal gripper position by overlaying the gripper and part mask
+            # for all possible positions and angles. Stops after 3 seconds of processing time.
+            gripper_placement = GripperPlacement(processed_part, processed_gripper)
+            position = gripper_placement.determine_gripper_position()
 
-            analytic_result = False  # Set to True if we don't have to continue with the ML model
-
-            # This function calls the Machine Learning model to predict the x, y, and rotation values
-            # The results are printed to the console and written to "results.csv"
-            if analytic_result == False:
+            # If no valid gripper position is found, use a less accurate ml model to predict the position
+            if position is None:
+                # This function calls the Machine Learning model to predict the x, y, and rotation values
+                # The results are printed to the console and written to "results.csv"
                 ML_prediction(part_path, gripper_path, output_path, model)
 
 
