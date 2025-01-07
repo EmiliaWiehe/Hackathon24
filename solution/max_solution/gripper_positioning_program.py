@@ -21,7 +21,7 @@ array2 = np.random.randint(0, 100, size=10**8, dtype=np.int32)
 # Main function
 def main():
     # Load a test image
-    test_image_path = r'C:\\Users\\singe\\Documents\\Desktop\\KIT\\11. Semester\\ProKI\\All Parts\\mask_20241202-164923-044.png'  # Replace with an actual path
+    test_image_path = r'C:\\Users\\singe\\Documents\\Desktop\\KIT\\11. Semester\\ProKI\\All Parts\\mask_20241126-142350-505.png'  # Replace with an actual path
     if os.path.exists(test_image_path):
         
         image_array = tf.keras.preprocessing.image.load_img(test_image_path)
@@ -40,7 +40,7 @@ def main():
         com_x, com_y =   processed_part.get_part_com()
 
         # Open the PNG image
-        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\2\2.png').convert("RGBA")
+        gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\4\4.png').convert("RGBA")
         processed_gripper = ProcessedGripper(gripper, 2)
 
         collision_threshold = processed_part.get_collision_threshold()

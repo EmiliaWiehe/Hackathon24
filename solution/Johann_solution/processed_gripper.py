@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import ndimage
+from scipy.ndimage import rotate
 import math
 
 class ProcessedGripper:
@@ -260,51 +261,46 @@ class ProcessedGripper:
                         max(0, c - padding_amount):c + padding_amount + 1] = 1
 
         return padded_array
-        
-    def count_symmetrical_axes(self, image, tolerance=0.8):
-        """
-        Determines the number of symmetrical axes in a 2D numpy array (binary image)
-        by dividing the array along axes and comparing the subarrays as-is.
-        
-        Args:
-            image (np.array): A 2D numpy array with binary values (0 and 1).
-            tolerance (float): The threshold for symmetry (default is 0.9, i.e., 90% similarity).
             
-        Returns:
-            int: The number of symmetrical axes (0, 1, or 2).
+    def count_symmetrical_axes(self, array, tolerance=0.99):
         """
-        # Ensure the input is a 2D numpy array
-        if not isinstance(image, np.ndarray) or image.ndim != 2:
-            raise ValueError("Input must be a 2D numpy array.")
+        Counts the number of symmetrical axes of a given 2D numpy array by rotating it in 5.625-degree steps.
+
+        Parameters:
+        - array (np.array): The input 2D array.
+        - tolerance (float): The tolerance for comparing array equality.
+
+        Returns:
+        - int: The number of symmetrical axes.
+        """
+        if array.ndim != 2:
+            raise ValueError("Input array must be 2D.")
+
+        # Resize input array to square and center it
+        padded_array = self.resize_for_rotation(array)
+
+        step_angle = 45
+        total_symmetries = 0
+        total_steps = int(360 / step_angle)
+
+        for step in range(0, total_steps):
+            print(f"Step: {step}")
+            rotated_array = rotate(padded_array, step * step_angle, reshape=False, order=1, mode='nearest')
+            # Check if arrays are visually identical (treat as images)
+
+            # Compute the number of identical pixels
+            identical_pixels = np.sum(padded_array == rotated_array)
+            total_pixels = padded_array.size
+            
+            # Calculate similarity ratio
+            similarity_ratio = identical_pixels / total_pixels
+
+            if similarity_ratio > tolerance:
+                total_symmetries += 1
+
+        # Number of symetric axies is equal to the base 2 log of total symmetries
+        total_symmetries = int(math.log2(total_symmetries))
         
-        symmetrical_axes = 0
-        rows, cols = image.shape
+        print(f"Total number of symmetrical axes: {total_symmetries}")
 
-        # Check vertical symmetry (left-right division)
-        if cols % 2 == 0:  # Even number of columns
-            left_half = image[:, :cols // 2]
-            right_half = image[:, cols // 2:]
-        else:  # Odd number of columns (exclude center column)
-            left_half = image[:, :cols // 2]
-            right_half = image[:, cols // 2 + 1:]
-        
-        vertical_similarity = np.sum(left_half == right_half) / left_half.size
-        if vertical_similarity >= tolerance:
-            symmetrical_axes += 1
-
-        # Check horizontal symmetry (top-bottom division)
-        if rows % 2 == 0:  # Even number of rows
-            top_half = image[:rows // 2, :]
-            bottom_half = image[rows // 2:, :]
-        else:  # Odd number of rows (exclude center row)
-            top_half = image[:rows // 2, :]
-            bottom_half = image[rows // 2 + 1:, :]
-        
-        horizontal_similarity = np.sum(top_half == bottom_half) / top_half.size
-        if horizontal_similarity >= tolerance:
-            symmetrical_axes += 1
-
-        # Print number of symmetrical axes
-        print(f"The gripper was found to have (at least) {symmetrical_axes} symmetrical axes.")
-
-        return symmetrical_axes
+        return total_symmetries

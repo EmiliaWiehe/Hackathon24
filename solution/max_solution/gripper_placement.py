@@ -73,8 +73,6 @@ class GripperPlacement:
                 max_rotations = 90
             case _:
                 max_rotations = 360
-        
-        max_rotations = 180
 
         # Limit runtime to 20 seconds
         start_time = time.time()
