@@ -42,7 +42,7 @@ def main(input_csv, output_path):
             print(f"Part path: {part_path}, Gripper path: {gripper_path}")
 
 
-            # Create a part mask to identify the holes
+            #Create a part mask to identify the holes
             processed_gripper = ProcessedGripper(gripper_path, 2)
             # Convert the gripper image to a numpy array
             processed_part = ProcessedPart(part_path)
@@ -51,6 +51,11 @@ def main(input_csv, output_path):
             gripper_placement = GripperPlacement(processed_part, processed_gripper)
             position = gripper_placement.determine_gripper_position()
 
+            with open("results.csv", "a") as f:
+                writer = csv.writer(f)
+                writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
+                print("Results written to results.csv")
+            position = None
             # If no valid gripper position is found, use a less accurate ml model to predict the position
             if position is None:
                 # This function calls the Machine Learning model to predict the x, y, and rotation values
