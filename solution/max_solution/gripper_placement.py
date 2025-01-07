@@ -81,11 +81,11 @@ class GripperPlacement:
         for index in self.radial_iterator(self.part_mask, start_index):
 
             # Check if the runtime exceeds 20 seconds
-            if time.time() - start_time > 20:
+            if time.time() - start_time > 5:
                 return None
             
             # Rotate the gripper in 5 degree steps
-            for angle in range(0, max_rotations, 5):
+            for angle in range(0, max_rotations, 10):
                 # Check if the gripper can be placed at the current position
                 if self.check_gripper_position(index[0], index[1], angle):
                     return (index[0], index[1], angle)

@@ -8,6 +8,12 @@ import time
 class GripperPlacement:
 
     def __init__(self, processed_part, processed_gripper):
+        """Initializes the GripperPlacement class with the processed part and gripper objects.
+
+        Args:
+            processed_part (ProcessedPart): ProcessedPart object representing the part.
+            processed_gripper (ProcessedGripper): ProcessedGripper object representing the gripper.
+        """
         self.processed_part = processed_part
         self.processed_gripper = processed_gripper
         self.part_mask = processed_part.get_part_mask()
@@ -57,9 +63,6 @@ class GripperPlacement:
         Returns:
         tuple: A tuple containing the best x, y, and angle values for the gripper.
         """
-        # Get all valid gripper positions
-        #placable_gripper_positions = self.get_placeable_gripper_positions()
-
         # Set the part mask com as the starting position
         start_index = self.processed_part.get_part_com()
 
@@ -71,23 +74,23 @@ class GripperPlacement:
                 max_rotations = 180
             case 2:
                 max_rotations = 90
+            case 3:
+                max_rotations = 45
             case _:
                 max_rotations = 360
-        
-        max_rotations = 180
 
-        # Limit runtime to 20 seconds
+        # Limit runtime to 3 seconds
         start_time = time.time()
 
         # Iterate through the array in radial pattern
         for index in self.radial_iterator(self.part_mask, start_index):
 
-            # Check if the runtime exceeds 20 seconds
+            # Check if the runtime exceeds 3 seconds
             if time.time() - start_time > 3:
                 return None
             
-            # Rotate the gripper in 5 degree steps
-            for angle in range(0, max_rotations, 5):
+            # Rotate the gripper in 10 degree steps
+            for angle in range(0, max_rotations, 10):
                 # Check if the gripper can be placed at the current position
                 if self.check_gripper_position(index[0], index[1], angle):
                     return (index[0], index[1], angle)
@@ -162,15 +165,14 @@ class GripperPlacement:
         return self.combined_array
     
     def radial_iterator(self, arr, start_index):
-        """
-        Iterate through the 2D numpy array in a radial pattern, starting from a given index.
+        """Iterate through the 2D numpy array in a radial pattern, starting from a given index.
         
-        Parameters:
-        arr (numpy.ndarray): The input 2D array.
-        start_index (tuple): The (x, y) index to start iterating from.
+        Args:
+            arr (numpy.ndarray): The input 2D array.
+            start_index (tuple): The (x, y) index to start iterating from.
         
         Yields:
-        tuple: (x, y) indices of elements in the radial order.
+            tuple: (x, y) indices of elements in the radial order.
         """
         rows, cols = arr.shape
         x0, y0 = start_index

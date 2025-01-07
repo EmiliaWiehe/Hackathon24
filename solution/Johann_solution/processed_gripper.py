@@ -4,8 +4,6 @@ from scipy.ndimage import rotate
 import math
 
 class ProcessedGripper:
-    """Processes a gripper.png to be able to retrive a np.array of the gripper as well as the center of mass.
-    """
 
     def __init__(self, gripper, padding_amount=1):
         """Generate np.array of gripper and calculate center of mass.
@@ -225,15 +223,14 @@ class ProcessedGripper:
         return resized_gripper
     
     def add_padding(self, input_array, padding_amount):
-        """
-        Adds padding around entries with a 1 in a 2D numpy array.
+        """Adds padding around entries with a 1 in a 2D numpy array.
 
-        Parameters:
-        input_array (np.array): A 2D numpy array containing only 0s and 1s.
-        padding_amount (int): The amount of padding to add around entries with a 1.
+        Args:
+            input_array (np.array): A 2D numpy array containing only 0s and 1s.
+            padding_amount (int): The amount of padding to add around entries with a 1.
 
         Returns:
-        np.array: A new 2D numpy array with the specified padding added.
+            np.array: A new 2D numpy array with the specified padding added.
         """
         if not isinstance(input_array, np.ndarray):
             raise ValueError("Input must be a numpy array.")
@@ -263,15 +260,14 @@ class ProcessedGripper:
         return padded_array
             
     def count_symmetrical_axes(self, array, tolerance=0.99):
-        """
-        Counts the number of symmetrical axes of a given 2D numpy array by rotating it in 5.625-degree steps.
+        """Counts the number of symmetrical axes of a given 2D numpy array by rotating it in 5.625-degree steps.
 
-        Parameters:
-        - array (np.array): The input 2D array.
-        - tolerance (float): The tolerance for comparing array equality.
+        Args:
+            array (np.array): The input 2D array.
+            tolerance (float): The tolerance for comparing array equality.
 
         Returns:
-        - int: The number of symmetrical axes.
+            int: The number of symmetrical axes.
         """
         if array.ndim != 2:
             raise ValueError("Input array must be 2D.")
@@ -301,6 +297,4 @@ class ProcessedGripper:
         # Number of symetric axies is equal to the base 2 log of total symmetries
         total_symmetries = int(math.log2(total_symmetries))
         
-        print(f"Total number of symmetrical axes: {total_symmetries}")
-
         return total_symmetries

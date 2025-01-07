@@ -12,7 +12,6 @@ from PIL import Image
 import cv2  # Optional for better resizing quality
 import time
 from collections import deque
-import timeit
 
 def get_png_file_paths(folder_path):
     """
@@ -92,17 +91,20 @@ def append_to_file(filename, content):
 # Main function
 def main():
     #Get the gripper
-    gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\3\3.png').convert("RGBA")
+    gripper = Image.open(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\1_alt\1.png').convert("RGBA")
     processed_gripper = ProcessedGripper(gripper, 2)
 
     # Path to missing_parts text file
-    missing_parts_file = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\3\missing_parts.txt'
+    missing_parts_file = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\1_alt\missing_parts.txt'
 
     # Get all image paths in the specified folder
     folder_path = r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\All Parts'
     image_paths = get_png_file_paths(folder_path)
     #image_paths = image_paths[232:]
     print(f'image_paths: {image_paths}')
+
+    # Start time
+    start_time = time.time()
 
     for image_path in image_paths:
         image_array = tf.keras.preprocessing.image.load_img(image_path)
@@ -120,8 +122,11 @@ def main():
             print(f"Optimal gripper position: {gripper_position}")
             print(f'image_base_name: {image_base_name}')
             image_output_name = f"{image_base_name[:-4]}_{gripper_position[0]}_{gripper_position[1]}_{gripper_position[2]}.png"
-            output_path = os.path.join(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\3', image_output_name)
-            overlay_images(image_path, r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\3\3.png', gripper_position[2], (gripper_position[0], gripper_position[1]), output_path)
+            output_path = os.path.join(r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\1_alt', image_output_name)
+            overlay_images(image_path, r'C:\Users\singe\Documents\Desktop\KIT\11. Semester\ProKI\Johann Training Data\1_alt\1.png', gripper_position[2], (gripper_position[0], gripper_position[1]), output_path)
+
+    # Print duration
+    print(f"Duration: {time.time() - start_time} seconds")
 
 
 
