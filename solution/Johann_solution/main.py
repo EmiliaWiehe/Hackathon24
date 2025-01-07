@@ -5,6 +5,8 @@ import random
 from utils import ML_prediction
 from model import SimpleCNN
 from processed_part import ProcessedPart
+from processed_gripper import ProcessedGripper
+from gripper_placement import GripperPlacement
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
@@ -48,17 +50,17 @@ def main(input_csv, output_path):
             # for all possible positions and angles. Stops after 3 seconds of processing time.
             gripper_placement = GripperPlacement(processed_part, processed_gripper)
             position = gripper_placement.determine_gripper_position()
-
-            with open("results.csv", "a") as f:
-                writer = csv.writer(f)
-                writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
-                print("Results written to results.csv")
-            position = None
+            
             # If no valid gripper position is found, use a less accurate ml model to predict the position
             if position is None:
                 # This function calls the Machine Learning model to predict the x, y, and rotation values
                 # The results are printed to the console and written to "results.csv"
                 ML_prediction(part_path, gripper_path, output_path, model)
+            else:
+                with open("results.csv", "a") as f:
+                    writer = csv.writer(f)
+                    writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
+                    print("Results written to results.csv")
 
 
 if __name__ == "__main__":

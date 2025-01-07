@@ -5,12 +5,13 @@ import numpy as np
 
 class ProcessedPart:
 
-    def __init__(self, part):
+    def __init__(self, part_path):
         """Starts the calculation of the part mask and center of mass.
 
         Args:
             part (tf.keras.image): Part to process.
         """
+        part = tf.keras.preprocessing.image.load_img(part_path)
         self.part_mask = self.ml_hole_localization(part)
         self.part_com = self.calc_part_com()
         self.collision_threshold = self.calc_collision_threshold(self.part_mask)

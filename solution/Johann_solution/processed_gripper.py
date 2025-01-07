@@ -2,16 +2,18 @@ import numpy as np
 from scipy import ndimage
 from scipy.ndimage import rotate
 import math
+from PIL import Image
 
 class ProcessedGripper:
 
-    def __init__(self, gripper, padding_amount=1):
+    def __init__(self, gripper_path, padding_amount=1):
         """Generate np.array of gripper and calculate center of mass.
 
         Args:
             gripper (PIL.Image): Image of the gripper.
             padding_amount (int): Amount of padding to add around the gripper.
         """
+        gripper = Image.open(gripper_path).convert("RGBA")
         self.gripper_array_unpadded = self.gripper_conversion(gripper)
         self.gripper_array = self.add_padding(self.gripper_array_unpadded, padding_amount)
         self.gripper_com = self.calc_gripper_com(self.gripper_array)
@@ -280,7 +282,6 @@ class ProcessedGripper:
         total_steps = int(360 / step_angle)
 
         for step in range(0, total_steps):
-            print(f"Step: {step}")
             rotated_array = rotate(padded_array, step * step_angle, reshape=False, order=1, mode='nearest')
             # Check if arrays are visually identical (treat as images)
 
