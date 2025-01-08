@@ -156,9 +156,9 @@ def evaluate_model(model, test_dataloader):
 def convert_to_convention(source, x, y, rotation):
     match source:
         case "ANALYTICAL":
-            return x, y, 360 - rotation
+            return x, y, (360 - rotation) % 360
         case "COMPACT":
-            return abs(x), abs(y), 360 - rotation
+            return abs(x), abs(y), (360 - rotation) % 360
 
 def ML_prediction(part_path, gripper_path, output_path, model):
     # with open(input_csv, "r") as f:
@@ -182,11 +182,12 @@ def ML_prediction(part_path, gripper_path, output_path, model):
         # print(prediction[0], prediction, labels, filenames)
         # for filename, prediction, label in zip(filenames, predictions, labels):
         if prediction[0] == 1:
+            position = convert_to_convention("COMPACT", shift_x, shift_y, rotation)
             #print(abs(shift_x), abs(shift_y), abs(rotation))
             # write the results to a CSV file
             with open("solution/results.csv", "a") as f:
                 writer = csv.writer(f)
-                writer.writerow([part_path, gripper_path, abs(shift_x), abs(shift_y), abs(rotation)])
+                writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
                 # empty the output_path folder after writing the results to the CSV file
                 # image = Image.open(image_path)
                 # image.show()
