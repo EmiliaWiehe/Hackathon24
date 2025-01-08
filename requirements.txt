@@ -1,3 +1,7 @@
-pandas
-numpy
-rich
+pillow==9.2.0
+torch==1.13.0
+torchvision==0.14.0 
+numpy==1.23.4
+matplotlib==3.6.2
+scipy==1.11.4
+tensorflow==2.18.0
