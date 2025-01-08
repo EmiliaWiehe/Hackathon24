@@ -21,11 +21,11 @@ def main(input_csv, output_path):
     print("Imports completed. Starting main method. \n")
 
     # delete the results.csv file if it already exists
-    if os.path.exists("evaluate/tool_output.csv"):
-        os.remove("evaluate/tool_output.csv")
+    if os.path.exists(output_path):
+        os.remove(output_path)
 
     # create results.csv file with headers
-    with open("evaluate/tool_output.csv", "w") as f:
+    with open(output_path, "w") as f:
         writer = csv.writer(f)
         writer.writerow(["part", "gripper", "x", "y", "angle"])
 
@@ -65,7 +65,7 @@ def main(input_csv, output_path):
                 ML_prediction(part_path, gripper_path, output_path, model)
                 print(f"Compact model was used for {part_path} and {gripper_path} \n")
             else:
-                with open("evaluate/tool_output.csv", "a") as f:
+                with open(output_path, "a") as f:
                     writer = csv.writer(f)
                     position = convert_to_convention("ANALYTICAL", position[0], position[1], position[2],
                                                      gripper_path)

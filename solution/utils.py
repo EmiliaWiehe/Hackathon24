@@ -180,6 +180,24 @@ def convert_to_convention(source, x, y, rotation, gripper_path):
             # Offset shift by the center of the gripper image
             gripper_x_offset, gripper_y_offset = calc_gripper_com_offset(gripper_path)
             return abs(x)+gripper_x_offset, abs(y)+gripper_y_offset, (360 - rotation) % 360
+        
+def place_in_center(part_path, gripper_path):
+    part = Image.open(part_path).convert("RGBA")
+    gripper = Image.open(gripper_path).convert("RGBA")
+    part_width, part_height = part.size
+    gripper_width, gripper_height = gripper.size
+    angle = 0
+
+    if gripper_width > gripper_height:
+        angle = 90
+        gripper = gripper.rotate(90, expand=True)
+        gripper_width, gripper_height = gripper.size
+
+    # Place center of gripper in part center
+    x = (part_width - gripper_width) // 2 + gripper_width // 2
+    y = (part_height - gripper_height) // 2 + gripper_height // 2
+
+    return x, y, angle
 
 def ML_prediction(part_path, gripper_path, output_path, model):
     # with open(input_csv, "r") as f:
@@ -189,9 +207,14 @@ def ML_prediction(part_path, gripper_path, output_path, model):
     #         part_path = row[0]
     #         gripper_path = row[1]
     temp = False
-    while not temp:   
+    found_result = False
+
+    # For loop with 10 iterations
+    for i in range(25):
+    #while not temp:   
         # Overlay images with transformations
-        shift_x, shift_y, rotation, image_path = overlay_images_with_transformations(part_path, gripper_path, output_path)
+        shift_x, shift_y, rotation, image_path = overlay_images_with_transformations(part_path, gripper_path, './solution/result')
+        position = convert_to_convention("COMPACT", shift_x, shift_y, rotation, gripper_path)
 
         # pass combined_image to the model and create a dataset
         # temp_dataset = SingleFolderImageDataset('./result')
@@ -203,10 +226,10 @@ def ML_prediction(part_path, gripper_path, output_path, model):
         # print(prediction[0], prediction, labels, filenames)
         # for filename, prediction, label in zip(filenames, predictions, labels):
         if prediction[0] == 1:
-            position = convert_to_convention("COMPACT", shift_x, shift_y, rotation, gripper_path)
+            found_result = True
             #print(abs(shift_x), abs(shift_y), abs(rotation))
             # write the results to a CSV file
-            with open("evaluate/tool_output.csv", "a") as f:
+            with open(output_path, "a") as f:
                 writer = csv.writer(f)
                 writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
                 # empty the output_path folder after writing the results to the CSV file
@@ -217,6 +240,12 @@ def ML_prediction(part_path, gripper_path, output_path, model):
                 #     os.remove(file_path)
             temp = True
             break
+    
+    if not found_result:
+        position = place_in_center(part_path, gripper_path)
+        with open(output_path, "a") as f:
+            writer = csv.writer(f)
+            writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
                             
 
         
