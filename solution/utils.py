@@ -210,7 +210,7 @@ def ML_prediction(part_path, gripper_path, output_path, model):
     found_result = False
 
     # For loop with 10 iterations
-    for i in range(25):
+    for i in range(50):
     #while not temp:   
         # Overlay images with transformations
         shift_x, shift_y, rotation, image_path = overlay_images_with_transformations(part_path, gripper_path, './solution/result')
@@ -240,7 +240,13 @@ def ML_prediction(part_path, gripper_path, output_path, model):
                 #     os.remove(file_path)
             temp = True
             break
+
+    # Delete all generated images in the result folder
+    for file in os.listdir('./solution/result'):
+        file_path = os.path.join('./solution/result', file)
+        os.remove(file_path)
     
+    # If no result is found, place the gripper in the center of the part
     if not found_result:
         position = place_in_center(part_path, gripper_path)
         with open(output_path, "a") as f:
