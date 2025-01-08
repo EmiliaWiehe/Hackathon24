@@ -14,7 +14,11 @@ is exited and a more compact ML Model is started. The compact model generates ra
 gripper positions and classifies them as valid or not.
 
 ## How to Run
-// How to run your code, e.g., `python solution/main.py path/to/input/tasks.csv output/solutions.csv` //
+- Navigate to the 'Hackathon24' folder.
+- Make sure requirements.txt and python version >3.10 is installed.
+- Place the task.csv in the 'solution' folder.
+- Use the following command: python solution/main.py './solution/task.csv' './solution/result'
+- The results will be compiled in solution/result.csv
 
 ## ... and other things you want to tell us
 - Analylitic approach is extremely accurate, but very slow.

@@ -79,7 +79,7 @@ class ProcessedPart:
             np.array [256, 256]: 256x256 2D np.array with values between 0 and 1. Values closer to 1 are more likely to be holes.
         """
 
-        model_dir = "./model/mask_model.keras"
+        model_dir = "./solution/model/mask_model.keras"
         model = models.load_model(model_dir)
 
         normalized_part = preprocessing.image.img_to_array(part) / 255.0 #Normalize array values between 0 and 1

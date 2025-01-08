@@ -15,14 +15,19 @@ import torch.nn.functional as F
 
 def main(input_csv, output_path):
 
+    # delete the results.csv file if it already exists
+    if os.path.exists("solution/results.csv"):
+        os.remove("solution/results.csv")
+        print("results.csv deleted successfully")
+
     # create results.csv file with headers
-    with open("results.csv", "w") as f:
+    with open("solution/results.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow(["part", "gripper", "x", "y", "rotation"])
         print("results.csv created successfully")
 
     # load ML model
-    model_dir = "./model"
+    model_dir = "./solution/model"
     os.makedirs(model_dir, exist_ok=True)
     model_path = os.path.join(model_dir, "model.pth")
     model = SimpleCNN()
@@ -53,14 +58,17 @@ def main(input_csv, output_path):
             
             # If no valid gripper position is found, use a less accurate ml model to predict the position
             if position is None:
+                # Print that the analitical model was used for the current gripper and part
+                print(f"Compact model was used for {part_path} and {gripper_path}")
                 # This function calls the Machine Learning model to predict the x, y, and rotation values
                 # The results are printed to the console and written to "results.csv"
                 ML_prediction(part_path, gripper_path, output_path, model)
             else:
-                with open("results.csv", "a") as f:
+                # Print that the analitical model was used for the current gripper and part
+                print(f"Analytical model was used for {part_path} and {gripper_path}")
+                with open("solution/results.csv", "a") as f:
                     writer = csv.writer(f)
                     writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
-                    print("Results written to results.csv")
 
 
 if __name__ == "__main__":

@@ -178,10 +178,9 @@ def ML_prediction(part_path, gripper_path, output_path, model):
         if prediction[0] == 1:
             print(abs(shift_x), abs(shift_y), abs(rotation))
             # write the results to a CSV file
-            with open("results.csv", "a") as f:
+            with open("solution/results.csv", "a") as f:
                 writer = csv.writer(f)
                 writer.writerow([part_path, gripper_path, abs(shift_x), abs(shift_y), abs(rotation)])
-                print("Results written to results.csv")
                 # empty the output_path folder after writing the results to the CSV file
                 # image = Image.open(image_path)
                 # image.show()
