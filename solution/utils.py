@@ -160,7 +160,6 @@ def ML_prediction(part_path, gripper_path, output_path, model):
     #     for row in reader:
     #         part_path = row[0]
     #         gripper_path = row[1]
-    print(f"Part path: {part_path}, Gripper path: {gripper_path}")
     temp = False
     while not temp:   
         # Overlay images with transformations
@@ -176,7 +175,7 @@ def ML_prediction(part_path, gripper_path, output_path, model):
         # print(prediction[0], prediction, labels, filenames)
         # for filename, prediction, label in zip(filenames, predictions, labels):
         if prediction[0] == 1:
-            print(abs(shift_x), abs(shift_y), abs(rotation))
+            #print(abs(shift_x), abs(shift_y), abs(rotation))
             # write the results to a CSV file
             with open("solution/results.csv", "a") as f:
                 writer = csv.writer(f)
