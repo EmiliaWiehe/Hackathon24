@@ -83,7 +83,7 @@ def main():
             os.remove(os.path.join("solution/visualization", file))
 
     # Import result.csv file
-    result_csv = "solution/results.csv"
+    result_csv = "evaluate/tool_output.csv"
 
     # Read the input CSV file
     with open(result_csv, "r") as f:

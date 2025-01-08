@@ -1,5 +1,0 @@
-part,gripper,x,y,rotation
-data/dummy/part_1/mask_20241126-154623-554.png,data/dummy/part_1/Gripper_1.png,98,73,0
-data/dummy/mask_20241126-142505-465.png,data/dummy/part_1/Gripper_3.png,77,140,0
-data/dummy/mask_20241202-165646-877.png,data/dummy/part_1/Gripper_3.png,173,202,64
-data/dummy/mask_20241126-142505-465.png,data/dummy/part_1/Gripper_1.png,101,148,250

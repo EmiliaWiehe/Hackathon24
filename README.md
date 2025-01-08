@@ -17,7 +17,9 @@ gripper positions and classifies them as valid or not.
 - Navigate to the 'Hackathon24' folder.
 - Make sure requirements.txt and python version >3.10 is installed.
 - Place the task.csv in the 'solution' folder.
-- Use the following command: python solution/main.py './solution/task.csv' './solution/result'
+- Use the following command: python solution/main.py './evaluate/task.csv' './solution/result'
+- NOTE: Importing the libraries might take a few seconds. The start of the program will be announced
+  in the terminal.
 - The results will be compiled in solution/result.csv
 - OPTIONAL: To generate the resulting images in solution/visulization use:
     - python solution/visualize_solution.py

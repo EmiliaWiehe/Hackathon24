@@ -206,7 +206,7 @@ def ML_prediction(part_path, gripper_path, output_path, model):
             position = convert_to_convention("COMPACT", shift_x, shift_y, rotation, gripper_path)
             #print(abs(shift_x), abs(shift_y), abs(rotation))
             # write the results to a CSV file
-            with open("solution/results.csv", "a") as f:
+            with open("evaluate/tool_output.csv", "a") as f:
                 writer = csv.writer(f)
                 writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
                 # empty the output_path folder after writing the results to the CSV file
