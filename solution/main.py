@@ -67,7 +67,8 @@ def main(input_csv, output_path):
             else:
                 with open("solution/results.csv", "a") as f:
                     writer = csv.writer(f)
-                    position = convert_to_convention("ANALYTICAL", position[0], position[1], position[2])
+                    position = convert_to_convention("ANALYTICAL", position[0], position[1], position[2],
+                                                     gripper_path)
                     writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
                 
                 print(f"Analytical model was used for {part_path} and {gripper_path} \n")

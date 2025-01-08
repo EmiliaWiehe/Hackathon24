@@ -8,6 +8,25 @@ import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
 import csv
+import math
+
+def calc_gripper_com_offset(gripper_path):
+    gripper = Image.open(gripper_path).convert("RGBA")
+    # Calculate the size of the square canvas for rotation
+    original_width, original_height = gripper.size
+    diagonal = int(math.ceil(math.sqrt(original_width**2 + original_height**2)))
+    square_size = diagonal  # Ensure square canvas can fully contain rotated image
+    
+    # Create a square canvas and paste the overlay image at the center
+    square_overlay = Image.new("RGBA", (square_size, square_size), (0, 0, 0, 0))
+    offset_x = (square_size - original_width) // 2
+    offset_y = (square_size - original_height) // 2
+    square_overlay.paste(gripper, (offset_x, offset_y))
+    
+    overlay_image_center_x = square_overlay.width // 2
+    overlay_image_center_y = square_overlay.height // 2
+
+    return overlay_image_center_x, overlay_image_center_y
 
 # Function to randomly overlay images with transformations
 def overlay_images_with_transformations(part_path, gripper_path, output_path):
@@ -153,12 +172,14 @@ def evaluate_model(model, test_dataloader):
 #     s = ''.join(filter(str.isdigit, s))
 #     return int(s)
 
-def convert_to_convention(source, x, y, rotation):
+def convert_to_convention(source, x, y, rotation, gripper_path):
     match source:
         case "ANALYTICAL":
             return x, y, (360 - rotation) % 360
         case "COMPACT":
-            return abs(x), abs(y), (360 - rotation) % 360
+            # Offset shift by the center of the gripper image
+            gripper_x_offset, gripper_y_offset = calc_gripper_com_offset(gripper_path)
+            return abs(x)+gripper_x_offset, abs(y)+gripper_y_offset, (360 - rotation) % 360
 
 def ML_prediction(part_path, gripper_path, output_path, model):
     # with open(input_csv, "r") as f:
@@ -182,7 +203,7 @@ def ML_prediction(part_path, gripper_path, output_path, model):
         # print(prediction[0], prediction, labels, filenames)
         # for filename, prediction, label in zip(filenames, predictions, labels):
         if prediction[0] == 1:
-            position = convert_to_convention("COMPACT", shift_x, shift_y, rotation)
+            position = convert_to_convention("COMPACT", shift_x, shift_y, rotation, gripper_path)
             #print(abs(shift_x), abs(shift_y), abs(rotation))
             # write the results to a CSV file
             with open("solution/results.csv", "a") as f:
