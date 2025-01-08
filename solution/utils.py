@@ -213,7 +213,10 @@ def ML_prediction(part_path, gripper_path, output_path, model):
     for i in range(50):
     #while not temp:   
         # Overlay images with transformations
-        shift_x, shift_y, rotation, image_path = overlay_images_with_transformations(part_path, gripper_path, './solution/result')
+        try:
+            shift_x, shift_y, rotation, image_path = overlay_images_with_transformations(part_path, gripper_path, './solution/result')
+        except ValueError:
+            break
         position = convert_to_convention("COMPACT", shift_x, shift_y, rotation, gripper_path)
 
         # pass combined_image to the model and create a dataset
