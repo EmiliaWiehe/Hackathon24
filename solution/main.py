@@ -5,7 +5,7 @@ import warnings
 warnings.filterwarnings("ignore") # Disable warnings
 import sys
 import random
-from utils import ML_prediction
+from utils import ML_prediction, convert_to_convention
 from model import SimpleCNN
 from processed_part import ProcessedPart
 from processed_gripper import ProcessedGripper
@@ -67,6 +67,7 @@ def main(input_csv, output_path):
             else:
                 with open("solution/results.csv", "a") as f:
                     writer = csv.writer(f)
+                    position = convert_to_convention("ANALYTICAL", position[0], position[1], position[2])
                     writer.writerow([part_path, gripper_path, position[0], position[1], position[2]])
                 
                 print(f"Analytical model was used for {part_path} and {gripper_path} \n")

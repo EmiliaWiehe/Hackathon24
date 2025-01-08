@@ -153,6 +153,13 @@ def evaluate_model(model, test_dataloader):
 #     s = ''.join(filter(str.isdigit, s))
 #     return int(s)
 
+def convert_to_convention(source, x, y, rotation):
+    match source:
+        case "ANALYTICAL":
+            return x, y, 360 - rotation
+        case "COMPACT":
+            return abs(x), abs(y), 360 - rotation
+
 def ML_prediction(part_path, gripper_path, output_path, model):
     # with open(input_csv, "r") as f:
     #     reader = csv.reader(f)
