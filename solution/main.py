@@ -5,16 +5,10 @@ import warnings
 warnings.filterwarnings("ignore") # Disable warnings
 import sys
 import random
-from utils import ML_prediction, convert_to_convention
-from model import SimpleCNN
+from utils_alt import ML_prediction, convert_to_convention
 from processed_part import ProcessedPart
 from processed_gripper import ProcessedGripper
 from gripper_placement import GripperPlacement
-import torch
-from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms as transforms
-import torch.nn as nn
-import torch.nn.functional as F
 
 def main(input_csv, output_path):
     # Print that imports are completed and the main method is started.
@@ -30,12 +24,13 @@ def main(input_csv, output_path):
         writer.writerow(["part", "gripper", "x", "y", "angle"])
 
     # load ML model
-    model_dir = "./solution/model"
-    os.makedirs(model_dir, exist_ok=True)
-    model_path = os.path.join(model_dir, "model.pth")
-    model = SimpleCNN()
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
+    # model_dir = "./solution/model"
+    # os.makedirs(model_dir, exist_ok=True)
+    # model_path = os.path.join(model_dir, "model.pth")
+    # model = SimpleCNN()
+    # model.load_state_dict(torch.load(model_path))
+    # model.eval()
+    model = None
 
     # Read the input CSV file
     with open(input_csv, "r") as f:
